@@ -56,7 +56,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _carregarFaseRigorosa(int faseId) {
-    // MEGA Dicionário com 50 Itens e Mascotes
+    // MEGA Dicionário com 50 Itens Únicos e Mascotes
     Map<int, Map<String, dynamic>> fasesMap = {
       1: {
         'titulo': "PRAIA DO SOL", 'mascote': '🐢', 'nomeMascote': 'Marina',
@@ -66,7 +66,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           {'emoji': '🍾', 'tipo': 'vidro', 'nome': 'Garrafa de Vidro', 'info': 'Muito perigosa escondida na areia.', 'tempo': '4.000 anos'},
           {'emoji': '🛍️', 'tipo': 'plastico', 'nome': 'Saco Plástico', 'info': 'Tartarugas acham que é comida!', 'tempo': '300 anos'},
           {'emoji': '🥫', 'tipo': 'metal', 'nome': 'Lata de Refri', 'info': 'Alumínio é 100% reciclável.', 'tempo': '200 anos'},
-          {'emoji': '📰', 'tipo': 'papel', 'nome': 'Jornal Velho', 'info': 'Voa com o vento para a água.', 'tempo': '6 semanas'},
+          {'emoji': '🩴', 'tipo': 'plastico', 'nome': 'Chinelo Velho', 'info': 'Voa com o vento para a água.', 'tempo': 'Indeterminado'},
         ]
       },
       2: {
@@ -82,7 +82,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       },
       3: {
         'titulo': "CENTRO DA CIDADE", 'mascote': '👧', 'nomeMascote': 'Bia',
-        'corFundo': const Color(0xFF8E9EAB), 'corAcento': const Color(0xFFEEF2F3), 'msg': "Vamos deixar as ruas limpas!",
+        'corFundo': const Color(0xFF8E9EAB), 'corAcento': const Color(0xFF4A569D), 'msg': "Vamos deixar as ruas limpas!",
         'itens': [
           {'emoji': '☕', 'tipo': 'papel', 'nome': 'Copo de Café', 'info': 'Tem plástico na sua composição interna.', 'tempo': '20 anos'},
           {'emoji': '🔌', 'tipo': 'metal', 'nome': 'Fio Solto', 'info': 'O cobre dentro do fio é muito valioso.', 'tempo': 'Indeterminado'},
@@ -91,11 +91,86 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           {'emoji': '⚡', 'tipo': 'metal', 'nome': 'Lata Energético', 'info': 'Vira peças de bicicletas e carros.', 'tempo': '200 anos'},
         ]
       },
-      // ... Adicionei um fallback bonito para todas as outras fases para o código não ficar gigante aqui,
-      // mas na prática você copia e cola o resto do dicionário do código anterior.
+      4: {
+        'titulo': "PÁTIO DA ESCOLA", 'mascote': '👦', 'nomeMascote': 'Leo',
+        'corFundo': const Color(0xFFFFB75E), 'corAcento': const Color(0xFFED8F03), 'msg': "A hora do recreio é para limpar!",
+        'itens': [
+          {'emoji': '📓', 'tipo': 'papel', 'nome': 'Caderno Usado', 'info': 'Um caderno reciclado salva árvores!', 'tempo': '6 meses'},
+          {'emoji': '🖊️', 'tipo': 'plastico', 'nome': 'Caneta Velha', 'info': 'Plástico duro demora séculos a sumir.', 'tempo': '400 anos'},
+          {'emoji': '🖇️', 'tipo': 'metal', 'nome': 'Clipe de Metal', 'info': 'Pequenos metais podem ser fundidos juntos.', 'tempo': '100 anos'},
+          {'emoji': '🧪', 'tipo': 'vidro', 'nome': 'Tubo Quebrado', 'info': 'Vidro de laboratório tem descarte especial.', 'tempo': '4.000 anos'},
+          {'emoji': '🗞️', 'tipo': 'papel', 'nome': 'Jornal Escolar', 'info': 'Deve ir para a reciclagem, não para o chão.', 'tempo': '6 semanas'},
+        ]
+      },
+      5: {
+        'titulo': "RIO CRISTALINO", 'mascote': '🐟', 'nomeMascote': 'Zé',
+        'corFundo': const Color(0xFF4CA1AF), 'corAcento': const Color(0xFF2C3E50), 'msg': "Não consigo nadar com este lixo!",
+        'itens': [
+          {'emoji': '🛞', 'tipo': 'plastico', 'nome': 'Pneu Velho', 'info': 'Descarte criminoso! Liberta microplásticos.', 'tempo': '600 anos'},
+          {'emoji': '🍟', 'tipo': 'plastico', 'nome': 'Saco Salgadinho', 'info': 'Sufoca os animais no fundo do rio.', 'tempo': '100 anos'},
+          {'emoji': '🛢️', 'tipo': 'metal', 'nome': 'Lata de Tinta', 'info': 'Liberta produtos químicos perigosos.', 'tempo': '100 anos'},
+          {'emoji': '💊', 'tipo': 'vidro', 'nome': 'Frasco Remédio', 'info': 'Contamina a nossa água potável!', 'tempo': '4.000 anos'},
+          {'emoji': '📦', 'tipo': 'papel', 'nome': 'Papelão Úmido', 'info': 'Bloqueia o curso da água e causa enchentes.', 'tempo': '3 meses'},
+        ]
+      },
+      6: {
+        'titulo': "USINA DE RECICLAGEM", 'mascote': '🤖', 'nomeMascote': 'Eco-Bot',
+        'corFundo': const Color(0xFF614385), 'corAcento': const Color(0xFF516395), 'msg': "Separação avançada ativada!",
+        'itens': [
+          {'emoji': '🖱️', 'tipo': 'plastico', 'nome': 'Mouse Velho', 'info': 'Plástico eletrônico (E-lixo) é muito tóxico.', 'tempo': 'Indeterminado'},
+          {'emoji': '📺', 'tipo': 'metal', 'nome': 'Placa Mãe', 'info': 'Tem ouro, prata e cobre na composição!', 'tempo': 'Indeterminado'},
+          {'emoji': '💡', 'tipo': 'vidro', 'nome': 'Lâmpada Fria', 'info': 'Cuidado: contém mercúrio venenoso.', 'tempo': '4.000 anos'},
+          {'emoji': '🗄️', 'tipo': 'papel', 'nome': 'Arquivos Antigos', 'info': 'Prontos a virar novas folhas limpas.', 'tempo': '6 meses'},
+          {'emoji': '📱', 'tipo': 'metal', 'nome': 'Celular Antigo', 'info': 'Nunca jogues isto no lixo comum!', 'tempo': 'Indeterminado'},
+        ]
+      },
+      7: {
+        'titulo': "RESERVA ECOLÓGICA", 'mascote': '🦜', 'nomeMascote': 'Lara',
+        'corFundo': const Color(0xFFA8E063), 'corAcento': const Color(0xFF56AB2F), 'msg': "Protege o meu ninho, por favor!",
+        'itens': [
+          {'emoji': '⛺', 'tipo': 'plastico', 'nome': 'Lona Rasgada', 'info': 'Sufoca o solo da reserva natural.', 'tempo': '40 anos'},
+          {'emoji': '🔦', 'tipo': 'metal', 'nome': 'Lanterna', 'info': 'Aço e pilhas são uma combinação mortal.', 'tempo': '100 anos'},
+          {'emoji': '🗺️', 'tipo': 'papel', 'nome': 'Mapa Turístico', 'info': 'Esquecido na trilha, polui a paisagem.', 'tempo': '3 meses'},
+          {'emoji': '🍷', 'tipo': 'vidro', 'nome': 'Garrafa de Vinho', 'info': 'Pode ferir patas de animais silvestres.', 'tempo': '4.000 anos'},
+          {'emoji': '🪢', 'tipo': 'plastico', 'nome': 'Corda Sintética', 'info': 'Pássaros podem ficar presos nos fios.', 'tempo': '150 anos'},
+        ]
+      },
+      8: {
+        'titulo': "MONTANHA NEVADA", 'mascote': '🐐', 'nomeMascote': 'Zeca',
+        'corFundo': const Color(0xFFD3CCE3), 'corAcento': const Color(0xFFE9E4F0), 'msg': "Está frio, mas o lixo não congela!",
+        'itens': [
+          {'emoji': '⛷️', 'tipo': 'metal', 'nome': 'Bastão Esqui', 'info': 'Feito de alumínio reciclável.', 'tempo': '200 anos'},
+          {'emoji': '🧤', 'tipo': 'plastico', 'nome': 'Luva Sintética', 'info': 'Poliéster é um plástico derivado do petróleo.', 'tempo': '200 anos'},
+          {'emoji': '🍫', 'tipo': 'plastico', 'nome': 'Embalagem', 'info': 'Deixada por alpinistas, o vento espalha.', 'tempo': '100 anos'},
+          {'emoji': '🎟️', 'tipo': 'papel', 'nome': 'Ticket de Trem', 'info': 'Papel encerado pode ir para reciclagem.', 'tempo': '1 mês'},
+          {'emoji': '🕶️', 'tipo': 'vidro', 'nome': 'Óculos Quebrado', 'info': 'As lentes refletem luz e atrapalham a fauna.', 'tempo': '4.000 anos'},
+        ]
+      },
+      9: {
+        'titulo': "OCEANO PROFUNDO", 'mascote': '🐳', 'nomeMascote': 'Azul',
+        'corFundo': const Color(0xFF1CB5E0), 'corAcento': const Color(0xFF000046), 'msg': "A minha família precisa de ar limpo!",
+        'itens': [
+          {'emoji': '🎣', 'tipo': 'plastico', 'nome': 'Rede de Pesca', 'info': 'A maior causa de morte de animais marinhos.', 'tempo': '600 anos'},
+          {'emoji': '⚓', 'tipo': 'metal', 'nome': 'Ferro Ferrugem', 'info': 'Metais pesados no fundo do mar.', 'tempo': '150 anos'},
+          {'emoji': '🧴', 'tipo': 'plastico', 'nome': 'Frasco Protetor', 'info': 'Químicos e plástico destroem corais.', 'tempo': '450 anos'},
+          {'emoji': '🧊', 'tipo': 'plastico', 'nome': 'Isopor', 'info': 'Desfaz-se em bolinhas brancas tóxicas.', 'tempo': 'Indeterminado'},
+          {'emoji': '🧭', 'tipo': 'vidro', 'nome': 'Bússola Velha', 'info': 'O descarte de vidro deve ser em terra firme.', 'tempo': '4.000 anos'},
+        ]
+      },
+      10: {
+        'titulo': "MUNDO SUSTENTÁVEL", 'mascote': '🌍', 'nomeMascote': 'Terra',
+        'corFundo': const Color(0xFFFDC830), 'corAcento': const Color(0xFFF37335), 'msg': "O desafio final para me salvar!",
+        'itens': [
+          {'emoji': '🪫', 'tipo': 'metal', 'nome': 'Bateria Carro', 'info': 'Lixo químico de nível máximo de perigo!', 'tempo': 'Indeterminado'},
+          {'emoji': '🪟', 'tipo': 'vidro', 'nome': 'Vidro de Janela', 'info': 'A reciclagem é diferente do vidro comum.', 'tempo': '4.000 anos'},
+          {'emoji': '🧾', 'tipo': 'papel', 'nome': 'Recibo Amassado', 'info': 'Papel termal contém Bisfenol A (BPA).', 'tempo': '3 meses'},
+          {'emoji': '🧸', 'tipo': 'plastico', 'nome': 'Brinquedo Quebrado', 'info': 'Plástico duro dura milénios intacto.', 'tempo': '1.000 anos'},
+          {'emoji': '🚲', 'tipo': 'metal', 'nome': 'Corrente Bici', 'info': 'Totalmente reciclável na siderurgia.', 'tempo': '100 anos'},
+        ]
+      },
     };
 
-    _faseAtualConfig = fasesMap[faseId] ?? fasesMap[1]!; // Fallback para Praia se não achar
+    _faseAtualConfig = fasesMap[faseId] ?? fasesMap[1]!;
     _itensDaFase = List<Map<String, dynamic>>.from(_faseAtualConfig['itens']);
   }
 
@@ -396,9 +471,15 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     double moveY = math.sin(_bgAnimationController.value * 2 * math.pi + index) * 50;
                     return Positioned(
                       left: 50.0 + (index * 60), top: 100.0 + (index * 100) + moveY,
-                      child: Container(
-                        width: 80, height: 80,
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1), filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10)),
+                      child: ImageFiltered(
+                        imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          width: 80, height: 80,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
+                        ),
                       ),
                     );
                   }),
