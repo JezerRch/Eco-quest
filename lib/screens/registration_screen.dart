@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'home_screen.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -14,7 +13,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
   bool _isLoading = false;
 
-  // Função para salvar no Firebase e no LocalStorage
+  // Função para salvar apenas no LocalStorage (SharedPreferences)
   Future<void> _registrarJogador() async {
     String nome = _nameController.text.trim();
 
@@ -31,28 +30,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final collection = FirebaseFirestore.instance.collection('jogadores');
-
-      // 2. Criar um documento com os dados iniciais completos para a Gamificação
-      DocumentReference docRef = await collection.add({
-        'nome': nome,
-        'nome_search': nome.toLowerCase(),
-        'moedas': 0,                  // Saldo inicial para o usuário testar a LOJA
-        'nivel': 1,
-        'xp': 0,
-        'status': 'ativo',
-        'data_criacao': FieldValue.serverTimestamp(),
-        'fases_liberadas': [1],          // Começa com a Praia desbloqueada
-
-        // --- CAMPOS NECESSÁRIOS PARA A CUSTOMIZAÇÃO (FUNDOS) ---
-        'tema_ativo': 'padrao',          // Define o ID do tema inicial
-        'temas_comprados': ['padrao'],   // Lista de IDs que o usuário já possui
-      });
-
-      // Salva localmente para não precisar logar toda vez
+      // Salva localmente os dados iniciais do jogador
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_name', nome);
-      await prefs.setString('user_id', docRef.id);
+      await prefs.setInt('moedas', 0);
+      await prefs.setInt('nivel', 1);
+      await prefs.setInt('xp', 0);
+      await prefs.setString('tema_ativo', 'padrao');
+      await prefs.setStringList('fases_liberadas', ['1']);
+      await prefs.setStringList('temas_comprados', ['padrao']);
 
       if (!mounted) return;
 
@@ -61,14 +47,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         context,
         MaterialPageRoute(builder: (context) => HomeScreen(userName: nome)),
       );
-    } on FirebaseException catch (e) {
-      debugPrint("Erro Firestore: ${e.code}");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro no banco: ${e.message}")),
-      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Verifique sua conexão com a internet.")),
+        const SnackBar(content: Text("Erro ao salvar dados localmente.")),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -78,7 +59,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Evita que o teclado quebre o layout
+      resizeToAvoidBottomInset: false,
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
