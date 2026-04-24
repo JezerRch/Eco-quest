@@ -3,23 +3,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'screens/loading_screen.dart';
 import 'firebase_options.dart';
 
-/*void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform, // ESSA LINHA É VITAL PARA WEB
-  );
-  runApp(EcoBotApp());
-}
-*/
-
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Inicializa o Firebase
-  runApp(EcoBotApp());
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const EcoBotApp());
 }
 
 class EcoBotApp extends StatelessWidget {
+  const EcoBotApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
