@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'dart:ui'; // Necessário para o efeito de desfoque (Blur)
 
 class GameScreen extends StatefulWidget {
   final int faseId;
@@ -15,7 +16,7 @@ class GameScreen extends StatefulWidget {
     required this.docId,
     required this.xpAtual,
     required this.nivelAtual,
-    required this.moedasAtuais,
+    required this.moedasAtuais
   });
 
   @override
@@ -25,68 +26,26 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  // 44 itens únicos — cada fase usa itens exclusivos sem repetição
   final Map<String, Map<String, String>> _dadosItens = {
-    // Fase 1
-    'Copo de Plástico':     {'info': 'Plásticos se quebram em microplásticos que poluem o oceano.', 'tempo': '200 a 450 anos'},
-    'Garrafa de Vidro':     {'info': 'O vidro é 100% reciclável e pode ser reutilizado infinitamente.', 'tempo': 'Mais de 4 mil anos'},
-    // Fase 2
-    'Jornal Velho':         {'info': 'Reciclar papel economiza muita água e energia na produção.', 'tempo': '2 a 6 semanas'},
-    'Lata de Conserva':     {'info': 'O aço reciclado volta para a indústria como novas latas ou peças.', 'tempo': '10 a 100 anos'},
-    'Caixa de Papelão':     {'info': 'A reciclagem de 1 tonelada de papel evita o corte de 20 árvores.', 'tempo': '3 a 6 meses'},
-    // Fase 3
-    'Sucata Eletrônica':    {'info': 'Possui metais como ouro e cobre que podem ser recuperados.', 'tempo': 'Indeterminado e altamente poluente'},
-    'Frasco de Amaciante':  {'info': 'Este plástico (PEAD) é muito valorizado no mercado de reciclagem.', 'tempo': 'Até 450 anos'},
-    'Taça Quebrada':        {'info': 'Vidros domésticos têm temperatura de fusão diferente de garrafas.', 'tempo': '4 mil anos'},
-    'Clipes de Metal':      {'info': 'Pequenos objetos metálicos devem ser agrupados para não se perderem.', 'tempo': '10 a 100 anos'},
-    // Fase 4
-    'Bateria Velha':        {'info': 'Contém substâncias químicas que podem causar doenças graves.', 'tempo': '100 a 500 anos'},
-    'Revista Antiga':       {'info': 'O papel das revistas pode ser transformado em novos cadernos.', 'tempo': '4 a 6 meses'},
-    'Régua Plástica':       {'info': 'Plástico rígido leva séculos para se decompor no meio ambiente.', 'tempo': '400 a 500 anos'},
-    'Caderno Rascunho':     {'info': 'Reciclar papel economiza 60% de energia em relação à produção nova.', 'tempo': '2 a 6 semanas'},
-    // Fase 5
-    'Sacola Plástica':      {'info': 'É um dos itens que mais causa morte de animais marinhos.', 'tempo': '10 a 20 anos'},
-    'Embalagem de Leite':   {'info': 'Embalagens Tetra Pak são recicláveis em pontos de coleta especiais.', 'tempo': '3 a 6 meses'},
-    'Latinha de Alumínio':  {'info': 'O alumínio pode ser reciclado infinitamente sem perder qualidade.', 'tempo': '80 a 100 anos'},
-    'Frasco de Remédio':    {'info': 'Vidros de remédio nunca devem ser descartados com o lixo comum.', 'tempo': '4 mil anos'},
-    // Fase 6
-    'Talher de Alumínio':   {'info': 'Reciclar alumínio gasta apenas 5% da energia de extrair o minério.', 'tempo': '200 a 500 anos'},
-    'Lata de Tinta':        {'info': 'Latas de tinta vazias devem ir a ecopontos especializados.', 'tempo': '10 a 100 anos'},
-    'Fio de Cobre':         {'info': 'O cobre é altamente valorizado no mercado de reciclagem global.', 'tempo': '50 a 100 anos'},
-    'Cabo de Carregador':   {'info': 'O lixo eletrônico cresce 21% ao ano e contém substâncias tóxicas.', 'tempo': 'Indeterminado'},
-    'Pote de Vidro':        {'info': 'O vidro é 100% reciclável e pode ser reprocessado infinitamente.', 'tempo': 'Mais de 4 mil anos'},
-    // Fase 7
-    'Rolo de Papel':        {'info': 'O rolo interno do papel higiênico é 100% reciclável.', 'tempo': '1 a 3 meses'},
-    'Frasco de Óleo':       {'info': 'Óleo de cozinha nunca deve ser descartado na pia ou no lixo comum.', 'tempo': 'Até 450 anos'},
-    'Parafuso Velho':       {'info': 'Metais ferrosos como aço e ferro têm alta taxa de reciclagem.', 'tempo': '10 a 100 anos'},
-    'Lâmpada Queimada':     {'info': 'Lâmpadas fluorescentes contêm mercúrio e exigem descarte especial.', 'tempo': 'Varia (componentes perigosos)'},
-    'Embalagem de Manteiga':{'info': 'Potes plásticos devem ser lavados antes de ir para a reciclagem.', 'tempo': '400 a 450 anos'},
-    // Fase 8
-    'Garrafa de Aço':       {'info': 'O aço é um dos metais mais reciclados do mundo, com taxa de 85%.', 'tempo': '80 a 100 anos'},
-    'Caixa de Pizza':       {'info': 'Caixas sem gordura são recicláveis; manchadas vão ao lixo orgânico.', 'tempo': '3 a 6 meses'},
-    'Frasco de Perfume':    {'info': 'Frascos de vidro de perfume podem ser reciclados com outros vidros.', 'tempo': 'Mais de 4 mil anos'},
-    'Brinquedo de Plástico':{'info': 'Brinquedos velhos podem ser doados ou enviados a pontos de reciclagem.', 'tempo': '200 a 500 anos'},
-    'Tampinha de Metal':    {'info': 'Tampinhas metálicas são muito procuradas por catadores e têm alto valor.', 'tempo': '10 a 100 anos'},
-    // Fase 9
-    'Copo de Vidro':        {'info': 'Copos de vidro devem ser descartados em pontos específicos de coleta.', 'tempo': 'Mais de 4 mil anos'},
-    'Pote de Sorvete':      {'info': 'Potes de plástico devem ser lavados antes de ir para a reciclagem seletiva.', 'tempo': '400 a 450 anos'},
-    'Lata de Atum':         {'info': 'Latas de metal são 100% recicláveis e têm alta demanda no mercado.', 'tempo': '10 a 100 anos'},
-    'Papel de Presente':    {'info': 'Papéis sem brilho são recicláveis; os metalizados e plastificados, não.', 'tempo': '2 a 6 semanas'},
-    'CD Velho':             {'info': 'CDs contêm plástico policarbonato e devem ir à coleta de eletrônicos.', 'tempo': 'Mais de 400 anos'},
-    'Embalagem de Comprimido':{'info': 'Blisteres de remédio têm alumínio e plástico; verifique como separar.', 'tempo': '400 a 500 anos'},
-    // Fase 10
-    'Espelho Quebrado':     {'info': 'Espelhos têm revestimento especial e não podem ser reciclados com vidros comuns.', 'tempo': 'Mais de 4 mil anos'},
-    'Arquivo de Papel':     {'info': 'Documentos de papel podem ser picotados e reciclados normalmente.', 'tempo': '2 a 6 semanas'},
-    'Chave Inglesa':        {'info': 'Ferramentas velhas de metal são aceitas em sucateiros e ecopontos.', 'tempo': '50 a 100 anos'},
-    'Lixeira de Plástico':  {'info': 'Mesmo lixeiras plásticas velhas podem ser recicladas corretamente.', 'tempo': '400 a 450 anos'},
-    'Pote de Mel':          {'info': 'Potes de vidro de mel devem ser lavados e ter a tampa separada.', 'tempo': 'Mais de 4 mil anos'},
-    'Engrenagem de Metal':  {'info': 'Peças metálicas de máquinas velhas podem ser reaproveitadas na indústria.', 'tempo': '50 a 100 anos'},
+    'Copo de Plástico': {'info': 'Plásticos se quebram em microplásticos que poluem o oceano.', 'tempo': '200 a 450 anos'},
+    'Garrafa de Vidro': {'info': 'O vidro é 100% reciclável e pode ser reutilizado infinitamente.', 'tempo': 'Indeterminado (mais de 4 mil anos)'},
+    'Jornal Velho': {'info': 'Reciclar papel economiza muita água e energia na produção.', 'tempo': '2 a 6 semanas'},
+    'Lata de Conserva': {'info': 'O aço reciclado volta para a indústria como peças de carro ou novas latas.', 'tempo': '10 a 100 anos'},
+    'Caixa de Papelão': {'info': 'A reciclagem de 1 tonelada de papel evita o corte de 20 árvores.', 'tempo': '3 a 6 meses'},
+    'Sucata Eletrônica': {'info': 'Possui metais como ouro e cobre que podem ser recuperados.', 'tempo': 'Indeterminado e altamente poluente'},
+    'Frasco de Amaciante': {'info': 'Este plástico (PEAD) é muito valorizado no mercado de reciclagem.', 'tempo': 'Até 450 anos'},
+    'Taça Quebrada': {'info': 'Vidros domésticos têm temperatura de fusão diferente de garrafas.', 'tempo': '4 mil anos'},
+    'Clipes de Metal': {'info': 'Pequenos objetos metálicos devem ser agrupados para não se perderem.', 'tempo': '10 a 100 anos'},
+    'Bateria Velha': {'info': 'Contém substâncias químicas que podem causar doenças graves.', 'tempo': '100 a 500 anos'},
+    'Revista Antiga': {'info': 'O papel das revistas pode ser transformado em novos cadernos.', 'tempo': '4 a 6 meses'},
+    'Frasco de Remédio': {'info': 'Vidros de remédio nunca devem ser descartados com o lixo comum.', 'tempo': '4 mil anos'},
+    'Sacola Plástica': {'info': 'É um dos itens que mais causa morte de animais marinhos.', 'tempo': '10 a 20 anos'},
+    'Talher de Alumínio': {'info': 'Reciclar alumínio gasta apenas 5% da energia de extrair o minério.', 'tempo': '200 a 500 anos'},
   };
 
   late List<Map<String, dynamic>> _itensDaFase;
   late String _tituloFase;
   late Color _corFundo;
-  late Color _corDestaque;
 
   int _acertos = 0;
   int _vidas = 3;
@@ -94,6 +53,7 @@ class _GameScreenState extends State<GameScreen> {
   bool _faseConcluida = false;
   String _feedbackTipo = "";
   String _lixeiraAnimando = "";
+
   late int _moedasLocais;
   bool _mostrarMensagemSucesso = false;
 
@@ -107,176 +67,124 @@ class _GameScreenState extends State<GameScreen> {
   void _configurarFase() {
     switch (widget.faseId) {
       case 1:
-        _tituloFase = "🏖️ LIMPEZA NA PRAIA";
-        _corFundo = const Color(0xFFE1F5FE);
-        _corDestaque = const Color(0xFF0288D1);
+        _tituloFase = "LIMPEZA NA PRAIA";
+        _corFundo = const Color(0xFF81D4FA); // Azul vibrante
         _itensDaFase = [
           {'emoji': '🥤', 'tipo': 'plastico', 'nome': 'Copo de Plástico'},
-          {'emoji': '🍾', 'tipo': 'vidro',    'nome': 'Garrafa de Vidro'},
+          {'emoji': '🍾', 'tipo': 'vidro', 'nome': 'Garrafa de Vidro'},
         ];
         break;
       case 2:
-        _tituloFase = "🌲 RESERVA FLORESTAL";
-        _corFundo = const Color(0xFFE8F5E9);
-        _corDestaque = const Color(0xFF388E3C);
+        _tituloFase = "RESERVA FLORESTAL";
+        _corFundo = const Color(0xFFA5D6A7); // Verde floresta
         _itensDaFase = [
-          {'emoji': '📰', 'tipo': 'papel',  'nome': 'Jornal Velho'},
-          {'emoji': '🥫', 'tipo': 'metal',  'nome': 'Lata de Conserva'},
-          {'emoji': '📦', 'tipo': 'papel',  'nome': 'Caixa de Papelão'},
+          {'emoji': '📰', 'tipo': 'papel', 'nome': 'Jornal Velho'},
+          {'emoji': '🥫', 'tipo': 'metal', 'nome': 'Lata de Conserva'},
+          {'emoji': '📦', 'tipo': 'papel', 'nome': 'Caixa de Papelão'},
         ];
         break;
       case 3:
-        _tituloFase = "🏙️ RECICLAGEM URBANA";
-        _corFundo = const Color(0xFFF5F5F5);
-        _corDestaque = const Color(0xFF546E7A);
+        _tituloFase = "RECICLAGEM URBANA";
+        _corFundo = const Color(0xFFB0BEC5); // Cinzento urbano
         _itensDaFase = [
           {'emoji': '📺', 'tipo': 'plastico', 'nome': 'Sucata Eletrônica'},
           {'emoji': '🧴', 'tipo': 'plastico', 'nome': 'Frasco de Amaciante'},
-          {'emoji': '🍷', 'tipo': 'vidro',    'nome': 'Taça Quebrada'},
-          {'emoji': '🖇️', 'tipo': 'metal',    'nome': 'Clipes de Metal'},
+          {'emoji': '🍷', 'tipo': 'vidro', 'nome': 'Taça Quebrada'},
+          {'emoji': '🖇️', 'tipo': 'metal', 'nome': 'Clipes de Metal'},
         ];
         break;
-      case 4:
-        _tituloFase = "🏫 MISSÃO ESCOLA";
-        _corFundo = const Color(0xFFFFF9C4);
-        _corDestaque = const Color(0xFFF9A825);
+      default:
+        _tituloFase = "MISSÃO AVANÇADA";
+        _corFundo = const Color(0xFFFFCC80); // Laranja suave
         _itensDaFase = [
-          {'emoji': '🔋', 'tipo': 'metal',   'nome': 'Bateria Velha'},
-          {'emoji': '🗞️', 'tipo': 'papel',   'nome': 'Revista Antiga'},
-          {'emoji': '📐', 'tipo': 'plastico', 'nome': 'Régua Plástica'},
-          {'emoji': '📓', 'tipo': 'papel',   'nome': 'Caderno Rascunho'},
-        ];
-        break;
-      case 5:
-        _tituloFase = "🏞️ SALVE O RIO";
-        _corFundo = const Color(0xFFE0F7FA);
-        _corDestaque = const Color(0xFF0097A7);
-        _itensDaFase = [
+          {'emoji': '🔋', 'tipo': 'metal', 'nome': 'Bateria Velha'},
+          {'emoji': '🗞️', 'tipo': 'papel', 'nome': 'Revista Antiga'},
+          {'emoji': '🧪', 'tipo': 'vidro', 'nome': 'Frasco de Remédio'},
           {'emoji': '🛍️', 'tipo': 'plastico', 'nome': 'Sacola Plástica'},
-          {'emoji': '🥛', 'tipo': 'papel',    'nome': 'Embalagem de Leite'},
-          {'emoji': '🍺', 'tipo': 'metal',    'nome': 'Latinha de Alumínio'},
-          {'emoji': '🧪', 'tipo': 'vidro',    'nome': 'Frasco de Remédio'},
-        ];
-        break;
-      case 6:
-        _tituloFase = "⚡ USINA VERDE";
-        _corFundo = const Color(0xFFF3E5F5);
-        _corDestaque = const Color(0xFF7B1FA2);
-        _itensDaFase = [
-          {'emoji': '🥄', 'tipo': 'metal',   'nome': 'Talher de Alumínio'},
-          {'emoji': '🪣', 'tipo': 'metal',   'nome': 'Lata de Tinta'},
-          {'emoji': '🔌', 'tipo': 'metal',   'nome': 'Fio de Cobre'},
-          {'emoji': '🪫', 'tipo': 'plastico', 'nome': 'Cabo de Carregador'},
-          {'emoji': '🫙', 'tipo': 'vidro',   'nome': 'Pote de Vidro'},
-        ];
-        break;
-      case 7:
-        _tituloFase = "🌿 ECO RESERVA";
-        _corFundo = const Color(0xFFE8EAF6);
-        _corDestaque = const Color(0xFF3949AB);
-        _itensDaFase = [
-          {'emoji': '🧻', 'tipo': 'papel',   'nome': 'Rolo de Papel'},
-          {'emoji': '🫗', 'tipo': 'plastico', 'nome': 'Frasco de Óleo'},
-          {'emoji': '🔩', 'tipo': 'metal',   'nome': 'Parafuso Velho'},
-          {'emoji': '💡', 'tipo': 'vidro',   'nome': 'Lâmpada Queimada'},
-          {'emoji': '🧈', 'tipo': 'plastico', 'nome': 'Embalagem de Manteiga'},
-        ];
-        break;
-      case 8:
-        _tituloFase = "🏔️ MISSÃO MONTANHA";
-        _corFundo = const Color(0xFFF1F8E9);
-        _corDestaque = const Color(0xFF558B2F);
-        _itensDaFase = [
-          {'emoji': '🍶', 'tipo': 'metal',   'nome': 'Garrafa de Aço'},
-          {'emoji': '🍕', 'tipo': 'papel',   'nome': 'Caixa de Pizza'},
-          {'emoji': '🔮', 'tipo': 'vidro',   'nome': 'Frasco de Perfume'},
-          {'emoji': '🎮', 'tipo': 'plastico', 'nome': 'Brinquedo de Plástico'},
-          {'emoji': '🪙', 'tipo': 'metal',   'nome': 'Tampinha de Metal'},
-        ];
-        break;
-      case 9:
-        _tituloFase = "🌊 MISSÃO OCEANO";
-        _corFundo = const Color(0xFFE3F2FD);
-        _corDestaque = const Color(0xFF1565C0);
-        _itensDaFase = [
-          {'emoji': '🥃', 'tipo': 'vidro',   'nome': 'Copo de Vidro'},
-          {'emoji': '🍨', 'tipo': 'plastico', 'nome': 'Pote de Sorvete'},
-          {'emoji': '🐟', 'tipo': 'metal',   'nome': 'Lata de Atum'},
-          {'emoji': '🎁', 'tipo': 'papel',   'nome': 'Papel de Presente'},
-          {'emoji': '💿', 'tipo': 'plastico', 'nome': 'CD Velho'},
-          {'emoji': '💊', 'tipo': 'plastico', 'nome': 'Embalagem de Comprimido'},
-        ];
-        break;
-      default: // Fase 10
-        _tituloFase = "🌍 MESTRE SUSTENTÁVEL";
-        _corFundo = const Color(0xFFFFF8E1);
-        _corDestaque = const Color(0xFFE65100);
-        _itensDaFase = [
-          {'emoji': '🪞', 'tipo': 'vidro',   'nome': 'Espelho Quebrado'},
-          {'emoji': '📂', 'tipo': 'papel',   'nome': 'Arquivo de Papel'},
-          {'emoji': '🔧', 'tipo': 'metal',   'nome': 'Chave Inglesa'},
-          {'emoji': '🗑️', 'tipo': 'plastico', 'nome': 'Lixeira de Plástico'},
-          {'emoji': '🍯', 'tipo': 'vidro',   'nome': 'Pote de Mel'},
-          {'emoji': '⚙️', 'tipo': 'metal',   'nome': 'Engrenagem de Metal'},
+          {'emoji': '🥄', 'tipo': 'metal', 'nome': 'Talher de Alumínio'},
         ];
     }
   }
 
   void _tocarSom(String nomeArquivo) async {
-    try {
-      await _audioPlayer.play(AssetSource('sounds/$nomeArquivo'));
-    } catch (_) {}
+    try { await _audioPlayer.play(AssetSource('sounds/$nomeArquivo')); } catch (e) {
+      debugPrint("Som não encontrado: $e");
+    }
   }
 
   void _dispararFeedback(String tipo, String lixeira) {
-    setState(() {
-      _feedbackTipo = tipo;
-      _lixeiraAnimando = lixeira;
-    });
+    setState(() { _feedbackTipo = tipo; _lixeiraAnimando = lixeira; });
     _tocarSom(tipo == "acerto" ? 'acerto.mp3' : 'erro.mp3');
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) setState(() { _feedbackTipo = ""; _lixeiraAnimando = ""; });
     });
   }
 
+  void _responder(String tipoSelecionado) {
+    if (_faseConcluida || _vidas <= 0) return;
+    String tipoCorreto = _itensDaFase[_itemAtualIndex]['tipo'];
+
+    if (tipoSelecionado == tipoCorreto) {
+      _dispararFeedback("acerto", tipoSelecionado);
+      Future.delayed(const Duration(milliseconds: 400), () {
+        _mostrarCuriosidade(_itensDaFase[_itemAtualIndex]['nome'], () {
+          setState(() {
+            _acertos++;
+            if (_itemAtualIndex < _itensDaFase.length - 1) {
+              _itemAtualIndex++;
+            } else {
+              _ganharFase();
+            }
+          });
+        });
+      });
+    } else {
+      _dispararFeedback("erro", tipoSelecionado);
+      setState(() {
+        _vidas--;
+        if (_vidas <= 0) Future.delayed(const Duration(milliseconds: 400), _perderJogo);
+      });
+    }
+  }
+
+  // ... (As funções _mostrarCuriosidade, _perderJogo, _comprarVidas e _ganharFase permanecem exatamente iguais)
   void _mostrarCuriosidade(String nomeItem, VoidCallback aoFechar) {
     final dados = _dadosItens[nomeItem];
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: const Color(0xFFF9FBE7),
-        title: const Row(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
           children: [
-            Icon(Icons.eco, color: Colors.green),
-            SizedBox(width: 8),
-            Text("VOCÊ SABIA?", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.green.shade100, shape: BoxShape.circle), child: const Icon(Icons.eco, color: Colors.green)),
+            const SizedBox(width: 12),
+            const Text("VOCÊ SABIA?", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black87)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(nomeItem, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.black87)),
-            const Divider(),
-            const SizedBox(height: 6),
-            Text(dados?['info'] ?? "Este item é reciclável!", style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 12),
+            Text(nomeItem, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.green)),
+            const Divider(height: 24),
+            Text(dados?['info'] ?? "Este item é reciclável!", style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.4)),
+            const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(color: Colors.blueGrey.shade50, borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: Colors.blueGrey.shade50, borderRadius: BorderRadius.circular(12)),
               child: Row(
                 children: [
-                  const Icon(Icons.timer_outlined, size: 18, color: Colors.blueGrey),
-                  const SizedBox(width: 6),
+                  const Icon(Icons.timer_outlined, size: 22, color: Colors.blueGrey),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: RichText(
                       text: TextSpan(
                         style: const TextStyle(color: Colors.black87, fontSize: 13),
                         children: [
-                          const TextSpan(text: "Decomposição: ", style: TextStyle(fontWeight: FontWeight.bold)),
-                          TextSpan(text: dados?['tempo'] ?? "Desconhecido"),
+                          const TextSpan(text: "Decomposição:\n", style: TextStyle(fontWeight: FontWeight.bold)),
+                          TextSpan(text: dados?['tempo'] ?? "Desconhecido", style: const TextStyle(color: Colors.blueGrey)),
                         ],
                       ),
                     ),
@@ -287,17 +195,14 @@ class _GameScreenState extends State<GameScreen> {
           ],
         ),
         actions: [
-          Center(
+          SizedBox(
+            width: double.infinity,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               onPressed: () { Navigator.pop(context); aoFechar(); },
-              child: const Text("CONTINUAR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text("CONTINUAR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ),
-          ),
+          )
         ],
       ),
     );
@@ -308,18 +213,14 @@ class _GameScreenState extends State<GameScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("SEM VIDAS! 💔", textAlign: TextAlign.center, style: TextStyle(fontSize: 20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text("SEM VIDAS! 💔", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text("O planeta precisa de você! Tente novamente ou recupere suas vidas.", textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(10)),
-              child: Text("Saldo: 💰 $_moedasLocais", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
+            const Text("O planeta precisa de ti! Tenta a fase novamente ou recupera as tuas vidas.", textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            Container(padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20), decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(20)), child: Text("💰 Saldo: $_moedasLocais", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900, fontSize: 16))),
           ],
         ),
         actions: [
@@ -328,59 +229,52 @@ class _GameScreenState extends State<GameScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber[800],
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[800], padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   onPressed: _moedasLocais >= 1000 ? _comprarVidas : null,
-                  icon: const Icon(Icons.favorite, color: Colors.white),
+                  icon: const Icon(Icons.shopping_cart, color: Colors.white),
                   label: const Text("COMPRAR 3 VIDAS (💰 1000)", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
+              const SizedBox(height: 8),
               TextButton(
                 onPressed: () { Navigator.pop(context); Navigator.pop(context); },
-                child: const Text("SAIR PARA O MAPA", style: TextStyle(color: Colors.grey)),
+                child: const Text("SAIR PARA O MAPA", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
               ),
             ],
-          ),
+          )
         ],
       ),
     );
   }
 
   Future<void> _comprarVidas() async {
-    if (_moedasLocais < 1000) return;
-    try {
-      await FirebaseFirestore.instance.collection('jogadores').doc(widget.docId).update({
-        'moedas': FieldValue.increment(-1000),
-      });
-      setState(() {
-        _vidas = 3;
-        _moedasLocais -= 1000;
-        _mostrarMensagemSucesso = true;
-      });
-      Navigator.pop(context);
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _mostrarMensagemSucesso = false);
-      });
-    } catch (e) {
-      debugPrint("Erro ao comprar vidas: $e");
+    if (_moedasLocais >= 1000) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      int moedasAtuais = prefs.getInt('moedas') ?? 0;
+      if (moedasAtuais >= 1000) {
+        await prefs.setInt('moedas', moedasAtuais - 1000);
+        setState(() { _vidas = 3; _moedasLocais -= 1000; _mostrarMensagemSucesso = true; });
+        if (context.mounted) Navigator.pop(context);
+        Future.delayed(const Duration(seconds: 2), () { if (mounted) setState(() => _mostrarMensagemSucesso = false); });
+      }
     }
   }
 
   Future<void> _ganharFase() async {
     if (_faseConcluida) return;
     _tocarSom('vitoria.mp3');
-    final Map<String, dynamic> updates = {
-      'xp': FieldValue.increment(20),
-      'moedas': FieldValue.increment(50),
-    };
-    if (widget.faseId < 10) {
-      updates['fases_liberadas'] = FieldValue.arrayUnion([widget.faseId + 1]);
-    }
-    await FirebaseFirestore.instance.collection('jogadores').doc(widget.docId).update(updates);
     setState(() => _faseConcluida = true);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int xpSalvo = prefs.getInt('xp') ?? 0;
+    int moedasSalvas = prefs.getInt('moedas') ?? 0;
+    await prefs.setInt('xp', xpSalvo + 20);
+    await prefs.setInt('moedas', moedasSalvas + 50);
+    List<String> fasesLiberadas = prefs.getStringList('fases_liberadas') ?? ['1'];
+    String proximaFaseId = (widget.faseId + 1).toString();
+    if (!fasesLiberadas.contains(proximaFaseId)) {
+      fasesLiberadas.add(proximaFaseId);
+      await prefs.setStringList('fases_liberadas', fasesLiberadas);
+    }
     _mostrarPopupVitoria();
   }
 
@@ -389,46 +283,40 @@ class _GameScreenState extends State<GameScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: const Color(0xFFF1F8E9),
-        title: const Text("🌟 PARABÉNS!", textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Column(
           children: [
-            const Text("Fase concluída com sucesso!", textAlign: TextAlign.center, style: TextStyle(fontSize: 15)),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _recompensaChip("⭐ +20 XP", Colors.orange),
-                const SizedBox(width: 10),
-                _recompensaChip("💰 +50", Colors.amber),
-              ],
-            ),
+            Icon(Icons.star_rounded, color: Colors.amber, size: 60),
+            SizedBox(height: 10),
+            Text("Fase Concluída!", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black87)),
           ],
         ),
-        actions: [
-          Center(
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () { Navigator.pop(context); Navigator.pop(context); },
-              child: const Text("IR PARA O MAPA", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
+        content: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.green.shade200)),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Recompensas:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+              SizedBox(height: 10),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                Text("⭐ +20 XP", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text("💰 +50", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ]),
+            ],
           ),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              onPressed: () { Navigator.pop(context); Navigator.pop(context); },
+              child: const Text("CONTINUAR A JORNADA", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          )
         ],
       ),
-    );
-  }
-
-  Widget _recompensaChip(String label, Color cor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: cor.withOpacity(0.15), border: Border.all(color: cor), borderRadius: BorderRadius.circular(20)),
-      child: Text(label, style: TextStyle(color: cor, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -438,187 +326,270 @@ class _GameScreenState extends State<GameScreen> {
     var itemAtual = _itensDaFase[_itemAtualIndex];
 
     return Scaffold(
-      backgroundColor: _corFundo,
-      body: Stack(
-        children: [
-          _buildHeader(),
-
-          // Item atual
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _corDestaque.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(_tituloFase, style: TextStyle(fontSize: 14, color: _corDestaque, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
-                ),
-                const SizedBox(height: 12),
-                Text(itemAtual['nome'], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87)),
-                const SizedBox(height: 8),
-                const Text("Arraste para a lixeira correta", style: TextStyle(fontSize: 12, color: Colors.black45)),
-                const SizedBox(height: 40),
-                Draggable<String>(
-                  data: itemAtual['tipo'],
-                  feedback: Material(
-                    color: Colors.transparent,
-                    child: Text(itemAtual['emoji'], style: const TextStyle(fontSize: 100)),
-                  ),
-                  childWhenDragging: Opacity(
-                    opacity: 0.2,
-                    child: Text(itemAtual['emoji'], style: const TextStyle(fontSize: 80)),
-                  ),
-                  child: Text(itemAtual['emoji'], style: const TextStyle(fontSize: 80)),
-                ),
-              ],
-            ),
+      body: Container(
+        // Fundo com Gradiente bonito
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_corFundo, Colors.white],
+            stops: const [0.3, 1.0],
           ),
+        ),
+        child: Stack(
+          children: [
+            _buildHeader(),
 
-          // Lixeiras
-          Positioned(
-            bottom: 40, left: 0, right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildBin('papel',   Colors.blue.shade600,   '📄', 'PAPEL'),
-                _buildBin('plastico',Colors.red.shade600,    '🧴', 'PLÁSTICO'),
-                _buildBin('metal',   Colors.amber.shade700,  '🔩', 'METAL'),
-                _buildBin('vidro',   Colors.green.shade600,  '🍾', 'VIDRO'),
-              ],
-            ),
-          ),
-
-          // Mensagem de sucesso
-          if (_mostrarMensagemSucesso)
+            // Centro do Jogo
             Center(
-              child: TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 300),
-                tween: Tween(begin: 0.0, end: 1.0),
-                builder: (context, val, child) => Opacity(
-                  opacity: val,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Título da Fase num Pill (Cápsula)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(15),
+                      color: Colors.white.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                    child: const Text(
-                      "❤️ Vidas restauradas!",
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    child: Text(
+                      _tituloFase,
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.blueGrey.shade800, letterSpacing: 1.5)
                     ),
                   ),
+                  const SizedBox(height: 20),
+
+                  // O Cartão do Item a ser reciclado
+                  Text(itemAtual['nome'], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.black87)),
+                  const SizedBox(height: 6),
+                  const Text("(Toca na lixeira correta ou arrasta o item)", style: TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 30),
+
+                  // Cartão Flutuante Draggable
+                  Draggable<String>(
+                    data: itemAtual['tipo'],
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: _buildItemCard(itemAtual['emoji'], isDragging: true)
+                    ),
+                    childWhenDragging: Opacity(
+                      opacity: 0.3,
+                      child: _buildItemCard(itemAtual['emoji'])
+                    ),
+                    child: _buildItemCard(itemAtual['emoji']),
+                  ),
+                ],
+              ),
+            ),
+
+            // Lixeiras Coloridas em Baixo
+            Positioned(
+              bottom: 40, left: 0, right: 0,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildBin('papel', const [Color(0xFF42A5F5), Color(0xFF1E88E5)], 'PAPEL', Icons.description_outlined),
+                    _buildBin('plastico', const [Color(0xFFEF5350), Color(0xFFE53935)], 'PLÁSTICO', Icons.local_drink_outlined),
+                    _buildBin('metal', const [Color(0xFFFFCA28), Color(0xFFFFB300)], 'METAL', Icons.settings_outlined),
+                    _buildBin('vidro', const [Color(0xFF66BB6A), Color(0xFF43A047)], 'VIDRO', Icons.wine_bar_outlined),
+                  ],
                 ),
               ),
             ),
-        ],
+
+            // Mensagem de Sucesso (Comprar Vidas)
+            if (_mostrarMensagemSucesso)
+              Center(
+                child: TweenAnimationBuilder(
+                  duration: const Duration(milliseconds: 300),
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  builder: (context, double val, child) {
+                    return Opacity(
+                      opacity: val,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 15, spreadRadius: 2)],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.favorite, color: Colors.redAccent),
+                            SizedBox(width: 10),
+                            Text("Vidas restauradas!", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBin(String tipo, Color cor, String emoji, String label) {
+  // Novo Widget: O Cartão do Item
+  Widget _buildItemCard(String emoji, {bool isDragging = false}) {
+    return Container(
+      width: 160,
+      height: 160,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDragging ? 0.2 : 0.1),
+            blurRadius: isDragging ? 25 : 15,
+            offset: Offset(0, isDragging ? 15 : 8),
+          )
+        ],
+        border: Border.all(color: Colors.grey.shade100, width: 2),
+      ),
+      child: Center(
+        child: Text(emoji, style: TextStyle(fontSize: isDragging ? 90 : 80)),
+      ),
+    );
+  }
+
+  // Novo Widget: As Lixeiras Premium
+  Widget _buildBin(String tipo, List<Color> cores, String label, IconData icon) {
     bool estaAnimando = _lixeiraAnimando == tipo;
     bool foiAcerto = _feedbackTipo == "acerto";
+
     return DragTarget<String>(
-      onAcceptWithDetails: (details) {
-        final dado = details.data;
-        if (dado == tipo) {
-          _dispararFeedback("acerto", tipo);
-          _mostrarCuriosidade(_itensDaFase[_itemAtualIndex]['nome'], () {
-            setState(() {
-              _acertos++;
-              if (_itemAtualIndex < _itensDaFase.length - 1) {
-                _itemAtualIndex++;
-              } else {
-                _ganharFase();
-              }
-            });
-          });
-        } else {
-          _dispararFeedback("erro", tipo);
-          setState(() {
-            _vidas--;
-            if (_vidas <= 0) _perderJogo();
-          });
-        }
-      },
+      onAcceptWithDetails: (details) => _responder(tipo),
       builder: (context, candidates, rejects) {
-        final bool hovering = candidates.isNotEmpty;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: estaAnimando ? 82 : (hovering ? 80 : 72),
-          height: estaAnimando ? 110 : (hovering ? 108 : 100),
-          decoration: BoxDecoration(
-            color: estaAnimando
-                ? (foiAcerto ? Colors.green.shade600 : Colors.red.shade600)
-                : (hovering ? cor.withOpacity(0.8) : cor),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: cor.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                estaAnimando ? (foiAcerto ? '✅' : '❌') : emoji,
-                style: const TextStyle(fontSize: 24),
+        bool isHovered = candidates.isNotEmpty; // Efeito visual se arrastar por cima
+
+        return GestureDetector(
+          onTap: () => _responder(tipo),
+          child: AnimatedScale(
+            scale: estaAnimando || isHovered ? 1.1 : 1.0,
+            duration: const Duration(milliseconds: 150),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 80,
+              height: estaAnimando ? 110 : 100,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: estaAnimando
+                    ? (foiAcerto ? [Colors.greenAccent, Colors.green] : [Colors.redAccent, Colors.red])
+                    : cores,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: cores.last.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5)
+                  )
+                ],
+                border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
               ),
-              const SizedBox(height: 4),
-              Text(label, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-            ],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    estaAnimando ? (foiAcerto ? Icons.check_circle : Icons.cancel) : icon,
+                    color: Colors.white,
+                    size: 32
+                  ),
+                  const SizedBox(height: 8),
+                  Text(label, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                ],
+              ),
+            ),
           ),
         );
       },
     );
   }
 
+  // Novo Header com Glassmorphism
   Widget _buildHeader() {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "ITEM ${_itemAtualIndex + 1} / ${_itensDaFase.length}",
-                  style: TextStyle(fontWeight: FontWeight.bold, color: _corDestaque, fontSize: 13),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  width: 110, height: 8,
-                  decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(5)),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: (_acertos / _itensDaFase.length).clamp(0.01, 1.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [_corDestaque.withOpacity(0.7), _corDestaque]),
-                        borderRadius: BorderRadius.circular(5),
+            // Container de Progresso (Efeito de Vidro)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("PROGRESSO ${_itemAtualIndex + 1}/${_itensDaFase.length}", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: Colors.black87)),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 110, height: 8,
+                        decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(10)),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: (_acertos / _itensDaFase.length).clamp(0.01, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(colors: [Colors.greenAccent, Colors.green]),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: const [BoxShadow(color: Colors.green, blurRadius: 4)]
+                            )
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-            Row(
-              children: List.generate(3, (index) => Padding(
-                padding: const EdgeInsets.only(left: 2),
-                child: Icon(
-                  index < _vidas ? Icons.favorite : Icons.favorite_border,
-                  color: Colors.red,
-                  size: 26,
-                ),
-              )),
+
+            // Corações (Vidas)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: List.generate(3, (index) {
+                  return AnimatedScale(
+                    scale: index < _vidas ? 1.0 : 0.8,
+                    duration: const Duration(milliseconds: 300),
+                    child: Icon(
+                      index < _vidas ? Icons.favorite : Icons.favorite_border,
+                      color: index < _vidas ? Colors.redAccent : Colors.black26,
+                      size: 26
+                    ),
+                  );
+                }),
+              ),
             ),
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close),
-              style: IconButton.styleFrom(backgroundColor: Colors.black12),
+
+            // Botão Fechar
+            Container(
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5), shape: BoxShape.circle),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.black87),
+                visualDensity: VisualDensity.compact,
+              ),
             ),
           ],
         ),

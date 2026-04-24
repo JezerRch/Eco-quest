@@ -1,4 +1,4 @@
-name: Build & Distribuir (Homolog)
+name: Build APK - Firebase (Homolog)
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
       - name: Analisar código
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
-      - name: 🏗Build APK (release)
+      - name: Build APK
         run: flutter build apk --release
 
       - name: Upload para Firebase App
