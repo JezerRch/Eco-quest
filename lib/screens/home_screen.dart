@@ -416,7 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.emoji_events,
                   color: Colors.amber,
                   label: "RANKING",
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RankingScreen(currentUserName: widget.userName))),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RankingScreen()),
                 ),
               ],
             ),

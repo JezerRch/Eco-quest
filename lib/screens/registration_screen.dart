@@ -116,7 +116,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.18),
                       borderRadius: BorderRadius.circular(35),
-                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
                       boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 15, spreadRadius: 2)],
                     ),
                     child: Column(

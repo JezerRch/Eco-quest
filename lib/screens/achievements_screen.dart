@@ -97,7 +97,7 @@ class AchievementsScreen extends StatelessWidget {
                     color: desbloqueado ? Colors.white.withOpacity(0.08) : Colors.black26,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: desbloqueado ? cor.withOpacity(0.5) : Colors.white10,
+                      color: desbloqueado ? cor.withValues(alpha: 0.5) : Colors.white10,
                       width: 1.5,
                     ),
                   ),
