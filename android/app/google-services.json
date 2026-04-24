@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "191915950193",
-    "project_id": "ecoquest-a7140",
-    "storage_bucket": "ecoquest-a7140.firebasestorage.app"
+    "project_number": "463819087439",
+    "project_id": "ecoquest-a7140-875d8",
+    "storage_bucket": "ecoquest-a7140-875d8.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:191915950193:android:be8e2c84de7555eac01bd0",
+        "mobilesdk_app_id": "1:463819087439:android:382ab1038620dca6a4943a",
         "android_client_info": {
           "package_name": "ecoquest.com.eco_quest"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCpVsv7qhMSWhBFeDizh7trTWbWDqu7wmQ"
+          "current_key": "AIzaSyCfIVCkhvs0En2uhe5YSu-IzyPGOMJQjis"
         }
       ],
       "services": {
