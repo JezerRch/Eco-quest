@@ -1,0 +1,48 @@
+name: Build APK - Firebase (Homolog)
+
+on:
+  push:
+    branches:
+      - homolog
+
+jobs:
+  build-and-distribute:
+    name: Build APK e enviar para testers
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Analisar código
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload para Firebase App
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: Univag
+          file: build/app/outputs/flutter-apk/app-release.apk
+          releaseNotes: |
+            Branch: homolog
+            Commit: ${{ github.sha }}
+            Mensagem: ${{ github.event.head_commit.message }}
