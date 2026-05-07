@@ -73,11 +73,3 @@ jobs:
           path: build/app/outputs/flutter-apk/ecoquest-homolog-v${{ github.event.inputs.versao }}.apk
           retention-days: 30
 
-      - name: Distribuir via Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
-        with:
-          appId: ${{ secrets.FIREBASE_APP_ID }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          groups: Univag
-          file: build/app/outputs/flutter-apk/ecoquest-homolog-v${{ github.event.inputs.versao }}.apk
-          releaseNotes: "[Homolog] v${{ github.event.inputs.versao }} — ${{ github.event.inputs.descricao }}"
