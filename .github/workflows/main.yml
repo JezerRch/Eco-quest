@@ -1,4 +1,4 @@
-name: EcoQuest — Publicar APK (Homolog)
+name: EcoQuest — Publicar APK (Produção)
 
 on:
   workflow_dispatch:
@@ -16,15 +16,15 @@ permissions:
   contents: write
 
 jobs:
-  publicar-homolog:
-    name: Build e publicar APK — Homolog
+  publicar-producao:
+    name: Build e publicar APK — Produção
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar código da branch homolog
+      - name: Baixar código da branch main
         uses: actions/checkout@v4
         with:
-          ref: homolog
+          ref: main
 
       - name: Configurar Java 17
         uses: actions/setup-java@v4
@@ -50,23 +50,22 @@ jobs:
       - name: Renomear APK
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk \
-             build/app/outputs/flutter-apk/ecoquest-homolog-v${{ github.event.inputs.versao }}.apk
+             build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk
 
       - name: Publicar Release no GitHub
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "homolog-v${{ github.event.inputs.versao }}" \
-            --title "EcoQuest Homolog v${{ github.event.inputs.versao }}" \
-            --notes "**Ambiente:** Homolog | ${{ github.event.inputs.descricao }}" \
-            --prerelease \
-            "build/app/outputs/flutter-apk/ecoquest-homolog-v${{ github.event.inputs.versao }}.apk"
+          gh release create "v${{ github.event.inputs.versao }}" \
+            --title "EcoQuest v${{ github.event.inputs.versao }}" \
+            --notes "**Versão de produção.**\n\n${{ github.event.inputs.descricao }}" \
+            "build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk"
 
       - name: Salvar APK como artefato
         uses: actions/upload-artifact@v4
         with:
-          name: ecoquest-homolog-v${{ github.event.inputs.versao }}
-          path: build/app/outputs/flutter-apk/ecoquest-homolog-v${{ github.event.inputs.versao }}.apk
+          name: ecoquest-v${{ github.event.inputs.versao }}
+          path: build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk
           retention-days: 30
 
       - name: Distribuir via Firebase App Distribution
@@ -75,5 +74,5 @@ jobs:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: Univag
-          file: build/app/outputs/flutter-apk/ecoquest-homolog-v${{ github.event.inputs.versao }}.apk
-          releaseNotes: "[Homolog] v${{ github.event.inputs.versao }} — ${{ github.event.inputs.descricao }}"
+          file: build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk
+          releaseNotes: "[Produção] v${{ github.event.inputs.versao }} — ${{ github.event.inputs.descricao }}"
