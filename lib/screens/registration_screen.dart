@@ -6,32 +6,34 @@ class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
 
   @override
-  _RegistrationScreenState createState() => _RegistrationScreenState();
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
 class _RegistrationScreenState extends State<RegistrationScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  bool _isLoading = false;
+  final TextEditingController _nomeController = TextEditingController();
+  bool _carregando = false;
 
-  // Função para salvar apenas no LocalStorage (SharedPreferences)
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _registrarJogador() async {
-    String nome = _nameController.text.trim();
-
+    final nome = _nomeController.text.trim();
     if (nome.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Por favor, digite seu nome!"),
-            backgroundColor: Colors.orangeAccent
+          content: Text('Por favor, digite seu nome!'),
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
-
-    setState(() => _isLoading = true);
-
+    setState(() => _carregando = true);
     try {
-      // Salva localmente os dados iniciais do jogador
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_name', nome);
       await prefs.setInt('moedas', 0);
       await prefs.setInt('nivel', 1);
@@ -39,20 +41,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       await prefs.setString('tema_ativo', 'padrao');
       await prefs.setStringList('fases_liberadas', ['1']);
       await prefs.setStringList('temas_comprados', ['padrao']);
-
       if (!mounted) return;
-
-      // Navega para a Home passando o nome do usuário
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen(userName: nome)),
+        MaterialPageRoute(builder: (_) => HomeScreen(userName: nome)),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erro ao salvar dados localmente.")),
-      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao salvar dados. Tente novamente.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _carregando = false);
     }
   }
 
@@ -64,147 +68,189 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         width: double.infinity,
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage("assets/registration.jpg"),
+            image: AssetImage('assets/registration.jpg'),
             fit: BoxFit.cover,
           ),
         ),
-        child: Stack(
-          children: [
-            // --- CABEÇALHO ---
-            Positioned(
-              top: 80,
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-                  const Text(
-                    "BEM-VINDO AO",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      shadows: [Shadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 8)],
-                    ),
-                  ),
-                  const Text(
-                    "ECO-BOT",
-                    style: TextStyle(
-                      color: Color(0xFFB2FF59),
-                      fontSize: 60,
-                      fontWeight: FontWeight.w900,
-                      shadows: [
-                        Shadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 10),
-                        Shadow(color: Colors.black45, offset: Offset(-1, -1), blurRadius: 2),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.15),
+                Colors.black.withValues(alpha: 0.55),
+              ],
             ),
-
-            // --- FORMULÁRIO E BOTÃO ---
-            Positioned(
-              bottom: 50,
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 35),
-                    padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(35),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
-                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 15, spreadRadius: 2)],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: 90,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    const Text(
+                      'BEM-VINDO AO',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 3,
+                        shadows: [Shadow(color: Colors.black54, offset: Offset(2, 2), blurRadius: 8)],
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "QUAL É O SEU NOME?",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
-                          ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'ECOQUEST',
+                      style: TextStyle(
+                        color: Color(0xFFB2FF59),
+                        fontSize: 64,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        shadows: [
+                          Shadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 12),
+                          Shadow(color: Color(0xFF76FF03), offset: Offset(0, 0), blurRadius: 20),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Recicle. Aprenda. Salve o planeta.',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
+                          shadows: [Shadow(color: Colors.black, blurRadius: 4)],
                         ),
-                        const SizedBox(height: 15),
-                        TextField(
-                          controller: _nameController,
-                          textAlign: TextAlign.center,
-                          textCapitalization: TextCapitalization.characters,
-                          style: const TextStyle(
-                              color: Color(0xFF1B5E20),
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                bottom: 50,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 20,
+                            spreadRadius: 2,
                           ),
-                          decoration: InputDecoration(
-                            hintText: "DIGITE AQUI...",
-                            hintStyle: TextStyle(color: Colors.grey[500], fontSize: 18),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.95),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(50),
-                              borderSide: BorderSide.none,
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'QUAL É O SEU NOME, HERÓI?',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 25),
-                  GestureDetector(
-                    onTap: _isLoading ? null : _registrarJogador,
-                    child: AnimatedScale(
-                      scale: _isLoading ? 0.9 : 1.0,
-                      duration: const Duration(milliseconds: 100),
-                      child: Container(
-                        width: 270,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                          borderRadius: BorderRadius.circular(40),
-                          border: Border.all(color: Colors.white, width: 4),
-                          boxShadow: [
-                            BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 12, offset: Offset(0, 6)),
-                            const BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 4)),
-                          ],
-                        ),
-                        child: Center(
-                          child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "JOGAR",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
-                                  shadows: [Shadow(color: Colors.black38, offset: Offset(2, 2))],
-                                ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _nomeController,
+                            textAlign: TextAlign.center,
+                            textCapitalization: TextCapitalization.characters,
+                            style: const TextStyle(
+                              color: Color(0xFF1B5E20),
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'DIGITE AQUI...',
+                              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 18),
+                              filled: true,
+                              fillColor: Colors.white.withValues(alpha: 0.95),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(50),
+                                borderSide: BorderSide.none,
                               ),
-                              SizedBox(width: 10),
-                              Icon(Icons.play_arrow_rounded, color: Colors.white, size: 40),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    GestureDetector(
+                      onTap: _carregando ? null : _registrarJogador,
+                      child: AnimatedScale(
+                        scale: _carregando ? 0.92 : 1.0,
+                        duration: const Duration(milliseconds: 120),
+                        child: Container(
+                          width: 260,
+                          height: 75,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF9800), Color(0xFFE64A19)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(40),
+                            border: Border.all(color: Colors.white, width: 3.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.orange.withValues(alpha: 0.4),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                              const BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 4)),
                             ],
+                          ),
+                          child: Center(
+                            child: _carregando
+                                ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 3)
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'JOGAR',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 2,
+                                          shadows: [Shadow(color: Colors.black38, offset: Offset(2, 2))],
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Icon(Icons.play_arrow_rounded, color: Colors.white, size: 38),
+                                    ],
+                                  ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

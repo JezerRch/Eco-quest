@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Removido o cloud_firestore
+import 'package:shared_preferences/shared_preferences.dart';
 import 'game_screen.dart';
 import 'ranking_screen.dart';
 import 'achievements_screen.dart';
@@ -9,116 +9,124 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.userName});
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isLoading = true;
-
-  // Variáveis de estado locais
+  bool _carregando = true;
   int xpTotal = 0;
   int moedas = 0;
   List<int> fasesLiberadas = [1];
   String temaAtivoId = 'padrao';
   List<String> temasComprados = ['padrao'];
 
-  final List<Map<String, dynamic>> listaDeFases = [
+  static const List<Map<String, dynamic>> _fases = [
     {'id': 1,  'label': 'PRAIA',       'emoji': '🏖️', 'align': Alignment.centerLeft,  'padding': 40.0},
     {'id': 2,  'label': 'FLORESTA',    'emoji': '🌲', 'align': Alignment.centerRight, 'padding': 40.0},
     {'id': 3,  'label': 'CIDADE',      'emoji': '🏙️', 'align': Alignment.center,      'padding': 0.0},
     {'id': 4,  'label': 'ESCOLA',      'emoji': '🏫', 'align': Alignment.centerLeft,  'padding': 60.0},
     {'id': 5,  'label': 'RIO',         'emoji': '🏞️', 'align': Alignment.centerRight, 'padding': 60.0},
-    {'id': 6,  'label': 'USINA',       'emoji': '⚡', 'align': Alignment.center,      'padding': 0.0},
+    {'id': 6,  'label': 'USINA',       'emoji': '⚡',  'align': Alignment.center,      'padding': 0.0},
     {'id': 7,  'label': 'RESERVA',     'emoji': '🌿', 'align': Alignment.centerLeft,  'padding': 30.0},
     {'id': 8,  'label': 'MONTANHA',    'emoji': '🏔️', 'align': Alignment.centerRight, 'padding': 50.0},
     {'id': 9,  'label': 'OCEANO',      'emoji': '🌊', 'align': Alignment.center,      'padding': 0.0},
     {'id': 10, 'label': 'SUSTENTÁVEL', 'emoji': '🌍', 'align': Alignment.centerLeft,  'padding': 40.0},
   ];
 
-  final List<Map<String, dynamic>> listaDeTemas = [
-    {'id': 'padrao',    'nome': 'Clássico Ambiental', 'cores': [Color(0xFF81D4FA), Color(0xFF2E7D32)], 'preco': 0},
-    {'id': 'crepusculo','nome': 'Crepúsculo Roxo',    'cores': [Color(0xFF4527A0), Color(0xFFB71C1C)], 'preco': 500},
-    {'id': 'oceano',    'nome': 'Profundezas Azuis',  'cores': [Color(0xFF0D47A1), Color(0xFF00BCD4)], 'preco': 800},
-    {'id': 'deserto',   'nome': 'Vale Dourado',       'cores': [Color(0xFFFFB300), Color(0xFFE65100)], 'preco': 1200},
+  static const List<Map<String, dynamic>> _temas = [
+    {'id': 'padrao',     'nome': 'Clássico Ambiental',  'cores': [Color(0xFF81D4FA), Color(0xFF1B5E20)], 'preco': 0},
+    {'id': 'crepusculo', 'nome': 'Crepúsculo Roxo',     'cores': [Color(0xFF4527A0), Color(0xFFB71C1C)], 'preco': 500},
+    {'id': 'oceano',     'nome': 'Profundezas Azuis',   'cores': [Color(0xFF0D47A1), Color(0xFF00BCD4)], 'preco': 800},
+    {'id': 'deserto',    'nome': 'Vale Dourado',         'cores': [Color(0xFFFFB300), Color(0xFFE65100)], 'preco': 1200},
   ];
 
   @override
   void initState() {
     super.initState();
-    _carregarDadosLocais();
+    _carregarDados();
   }
 
-  // Função para carregar os dados offline
-  Future<void> _carregarDadosLocais() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> _carregarDados() async {
+    final prefs = await SharedPreferences.getInstance();
     setState(() {
       xpTotal = prefs.getInt('xp') ?? 0;
       moedas = prefs.getInt('moedas') ?? 0;
       temaAtivoId = prefs.getString('tema_ativo') ?? 'padrao';
       temasComprados = prefs.getStringList('temas_comprados') ?? ['padrao'];
-
-      // Converte a lista de strings salva no cache para inteiros
-      List<String> fasesStr = prefs.getStringList('fases_liberadas') ?? ['1'];
+      final fasesStr = prefs.getStringList('fases_liberadas') ?? ['1'];
       fasesLiberadas = fasesStr.map((e) => int.tryParse(e) ?? 1).toList();
-
-      _isLoading = false;
+      _carregando = false;
     });
   }
 
   String _obterTitulo(int nivel) {
-    if (nivel <= 2)  return "Recrutinha Ambiental";
-    if (nivel <= 5)  return "Protetor Local";
-    if (nivel <= 8)  return "Agente Ecológico";
-    if (nivel <= 12) return "Guardião da Terra";
-    if (nivel <= 18) return "Guardião do Planeta";
-    return "Mestre da Sustentabilidade";
+    if (nivel <= 2)  return 'Recrutinha Ambiental';
+    if (nivel <= 5)  return 'Protetor Local';
+    if (nivel <= 8)  return 'Agente Ecológico';
+    if (nivel <= 12) return 'Guardião da Terra';
+    if (nivel <= 18) return 'Guardião do Planeta';
+    return 'Mestre da Sustentabilidade';
   }
 
   void _mostrarPerfil(int nivel) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("MEU PERFIL", textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.green.withOpacity(0.2)),
-              child: const Icon(Icons.person, size: 48, color: Colors.greenAccent),
-            ),
-            const SizedBox(height: 12),
-            Text(widget.userName.toUpperCase(), style: const TextStyle(color: Colors.yellowAccent, fontSize: 18, fontWeight: FontWeight.bold)),
-            Text(_obterTitulo(nivel), style: const TextStyle(color: Colors.white60, fontSize: 13)),
-            const Divider(color: Colors.white12, height: 28),
-            _rowInfoPerfil("⭐ Experiência Total:", "$xpTotal XP"),
-            _rowInfoPerfil("💰 Moedas Acumuladas:", "$moedas"),
-            _rowInfoPerfil("🗺️ Nível:", "$nivel"),
-            _rowInfoPerfil("🔓 Fases Desbloqueadas:", "${fasesLiberadas.length} / 10"),
-          ],
-        ),
-        actions: [
-          Center(
-            child: TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("FECHAR", style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
-            ),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D2010),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.green.withValues(alpha: 0.15),
+                  border: Border.all(color: Colors.greenAccent, width: 2),
+                ),
+                child: const Icon(Icons.person_rounded, size: 40, color: Colors.greenAccent),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                widget.userName.toUpperCase(),
+                style: const TextStyle(color: Colors.yellowAccent, fontSize: 20, fontWeight: FontWeight.w900),
+              ),
+              Text(
+                _obterTitulo(nivel),
+                style: const TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              _linhaPerfil('⭐ Experiência Total', '$xpTotal XP'),
+              _linhaPerfil('💰 Moedas Acumuladas', '$moedas'),
+              _linhaPerfil('🗺️ Nível Atual', '$nivel'),
+              _linhaPerfil('🔓 Fases Desbloqueadas', '${fasesLiberadas.length} / 10'),
+              const SizedBox(height: 20),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('FECHAR', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold, letterSpacing: 1)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _rowInfoPerfil(String label, String valor) {
+  Widget _linhaPerfil(String rotulo, String valor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-          Text(valor, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+          Text(rotulo, style: const TextStyle(color: Colors.white54, fontSize: 13)),
+          Text(valor, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
         ],
       ),
     );
@@ -127,107 +135,134 @@ class _HomeScreenState extends State<HomeScreen> {
   void _abrirLoja() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => StatefulBuilder( // StatefulBuilder para atualizar a tela da loja na hora
-        builder: (context, setModalState) {
-          return Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              children: [
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-                const SizedBox(height: 16),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.palette, color: Colors.pinkAccent, size: 20),
-                    SizedBox(width: 8),
-                    Text("LOJA DE TEMAS", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text("💰 $moedas moedas disponíveis", style: const TextStyle(color: Colors.white38, fontSize: 12)),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: listaDeTemas.length,
-                    separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
-                    itemBuilder: (context, index) {
-                      var tema = listaDeTemas[index];
-                      bool jaComprado = temasComprados.contains(tema['id']);
-                      bool estaAtivo = temaAtivoId == tema['id'];
-                      final cores = List<Color>.from(tema['cores']);
-
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                        leading: Container(
-                          width: 44, height: 44,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(colors: cores),
-                            boxShadow: [BoxShadow(color: cores.last.withOpacity(0.4), blurRadius: 6)],
-                          ),
-                        ),
-                        title: Text(tema['nome'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                        subtitle: Text(
-                          jaComprado ? "✅ Adquirido" : "💰 ${tema['preco']}",
-                          style: TextStyle(color: jaComprado ? Colors.greenAccent : Colors.white38, fontSize: 12),
-                        ),
-                        trailing: SizedBox(
-                          width: 90,
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              SharedPreferences prefs = await SharedPreferences.getInstance();
-
-                              if (jaComprado) {
-                                await prefs.setString('tema_ativo', tema['id']);
-                              } else if (moedas >= (tema['preco'] as int)) {
-                                // Compra o tema
-                                int novasMoedas = moedas - (tema['preco'] as int);
-                                await prefs.setInt('moedas', novasMoedas);
-
-                                List<String> novosTemas = List.from(temasComprados)..add(tema['id']);
-                                await prefs.setStringList('temas_comprados', novosTemas);
-                                await prefs.setString('tema_ativo', tema['id']);
-                              }
-
-                              if (context.mounted) Navigator.pop(context);
-                              _carregarDadosLocais(); // Atualiza a Home Screen
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: estaAtivo ? Colors.green : (jaComprado ? Colors.blueGrey.shade700 : Colors.pinkAccent),
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            child: Text(
-                              estaAtivo ? "USANDO" : (jaComprado ? "EQUIPAR" : "COMPRAR"),
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setModal) => Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.pinkAccent.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.palette_rounded, color: Colors.pinkAccent, size: 22),
                   ),
+                  const SizedBox(width: 10),
+                  const Text('LOJA DE TEMAS', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                 ),
-              ],
-            ),
-          );
-        }
+                child: Text('💰 $moedas moedas disponíveis', style: const TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: _temas.length,
+                  separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 1),
+                  itemBuilder: (ctx, index) {
+                    final tema = _temas[index];
+                    final jaComprado = temasComprados.contains(tema['id']);
+                    final estaAtivo = temaAtivoId == tema['id'];
+                    final cores = List<Color>.from(tema['cores'] as List);
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      leading: Container(
+                        width: 48, height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(colors: cores),
+                          boxShadow: [BoxShadow(color: cores.last.withValues(alpha: 0.5), blurRadius: 8)],
+                        ),
+                      ),
+                      title: Text(
+                        tema['nome'] as String,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        jaComprado ? '✅ Adquirido' : '💰 ${tema['preco']}',
+                        style: TextStyle(
+                          color: jaComprado ? Colors.greenAccent : Colors.white38,
+                          fontSize: 12,
+                        ),
+                      ),
+                      trailing: SizedBox(
+                        width: 95,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            if (jaComprado) {
+                              await prefs.setString('tema_ativo', tema['id'] as String);
+                            } else if (moedas >= (tema['preco'] as int)) {
+                              final novasMoedas = moedas - (tema['preco'] as int);
+                              await prefs.setInt('moedas', novasMoedas);
+                              final novosTemas = List<String>.from(temasComprados)..add(tema['id'] as String);
+                              await prefs.setStringList('temas_comprados', novosTemas);
+                              await prefs.setString('tema_ativo', tema['id'] as String);
+                            }
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            _carregarDados();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: estaAtivo
+                                ? Colors.green.shade700
+                                : (jaComprado ? Colors.blueGrey.shade700 : Colors.pinkAccent),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            estaAtivo ? 'USANDO' : (jaComprado ? 'EQUIPAR' : 'COMPRAR'),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_carregando) {
       return const Scaffold(
-        backgroundColor: Color(0xFF1A1A2E),
+        backgroundColor: Color(0xFF0A1A0A),
         body: Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
       );
     }
 
-    final temaAtual = listaDeTemas.firstWhere((t) => t['id'] == temaAtivoId, orElse: () => listaDeTemas[0]);
-    final int nivelCalculado = (xpTotal ~/ 100) + 1;
+    final temaAtual = _temas.firstWhere(
+      (t) => t['id'] == temaAtivoId,
+      orElse: () => _temas[0],
+    );
+    final nivelCalculado = (xpTotal ~/ 100) + 1;
+    final coresTema = List<Color>.from(temaAtual['cores'] as List);
 
     return Scaffold(
       body: Container(
@@ -235,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: List<Color>.from(temaAtual['cores']),
+            colors: coresTema,
           ),
         ),
         child: Stack(
@@ -243,16 +278,30 @@ class _HomeScreenState extends State<HomeScreen> {
             SingleChildScrollView(
               child: Column(
                 children: [
-                  const SizedBox(height: 210),
+                  const SizedBox(height: 220),
                   Text(
                     _obterTitulo(nivelCalculado).toUpperCase(),
-                    style: const TextStyle(fontSize: 12, letterSpacing: 2, color: Colors.yellowAccent, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      letterSpacing: 2.5,
+                      color: Colors.yellowAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text("MISSÕES AMBIENTAIS", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
-                  const SizedBox(height: 36),
-                  ...listaDeFases.map((fase) => _buildMissionNode(fase, nivelCalculado)),
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'MISSÕES AMBIENTAIS',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 1,
+                      shadows: [Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  ..._fases.map((fase) => _buildNodoMissao(fase, nivelCalculado)),
+                  const SizedBox(height: 90),
                 ],
               ),
             ),
@@ -263,35 +312,36 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMissionNode(Map<String, dynamic> fase, int nivel) {
-    final bool isUnlocked = fasesLiberadas.contains(fase['id']);
+  Widget _buildNodoMissao(Map<String, dynamic> fase, int nivel) {
+    final liberado = fasesLiberadas.contains(fase['id'] as int);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 22),
+      padding: const EdgeInsets.symmetric(vertical: 18),
       child: Align(
-        alignment: fase['align'],
+        alignment: fase['align'] as AlignmentGeometry,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: fase['padding']),
+          padding: EdgeInsets.symmetric(horizontal: fase['padding'] as double),
           child: GestureDetector(
             onTap: () {
-              if (isUnlocked) {
-                // Ao fechar a GameScreen, recarrega os dados caso o jogador tenha ganho XP
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => GameScreen(
-                    faseId: fase['id'],
-                    docId: "offline_user", // Como não temos mais firebase, o ID não importa aqui
-                    xpAtual: xpTotal,
-                    nivelAtual: nivel,
-                    moedasAtuais: moedas,
+              if (liberado) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GameScreen(
+                      faseId: fase['id'] as int,
+                      xpAtual: xpTotal,
+                      nivelAtual: nivel,
+                      moedasAtuais: moedas,
+                    ),
                   ),
-                )).then((_) => _carregarDadosLocais());
+                ).then((_) => _carregarDados());
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: const Text("🔒 Complete a fase anterior para desbloquear!"),
+                    content: const Text('🔒 Complete a fase anterior para desbloquear!'),
                     backgroundColor: Colors.black87,
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 );
               }
@@ -299,37 +349,51 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               children: [
                 Container(
-                  width: 80, height: 80,
+                  width: 88,
+                  height: 88,
                   decoration: BoxDecoration(
-                    color: isUnlocked ? Colors.white : Colors.black26,
+                    color: liberado ? Colors.white : Colors.black.withValues(alpha: 0.35),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isUnlocked ? Colors.orangeAccent : Colors.white24,
-                      width: 4,
+                      color: liberado ? Colors.orangeAccent : Colors.white.withValues(alpha: 0.2),
+                      width: 3.5,
                     ),
-                    boxShadow: isUnlocked
-                        ? [const BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))]
+                    boxShadow: liberado
+                        ? [
+                            BoxShadow(
+                              color: Colors.orangeAccent.withValues(alpha: 0.45),
+                              blurRadius: 22,
+                              spreadRadius: 3,
+                            ),
+                            const BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5)),
+                          ]
                         : null,
                   ),
                   child: Center(
-                    child: isUnlocked
-                        ? Text(fase['emoji'], style: const TextStyle(fontSize: 34))
-                        : const Icon(Icons.lock_outline, color: Colors.white38, size: 34),
+                    child: liberado
+                        ? Text(fase['emoji'] as String, style: const TextStyle(fontSize: 36))
+                        : const Icon(Icons.lock_rounded, color: Colors.white30, size: 32),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                   decoration: BoxDecoration(
-                    color: isUnlocked ? Colors.black45 : Colors.black26,
-                    borderRadius: BorderRadius.circular(12),
+                    color: liberado
+                        ? Colors.black.withValues(alpha: 0.5)
+                        : Colors.black.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: liberado
+                        ? Border.all(color: Colors.white.withValues(alpha: 0.12))
+                        : null,
                   ),
                   child: Text(
-                    "${fase['label']}",
+                    fase['label'] as String,
                     style: TextStyle(
-                      color: isUnlocked ? Colors.white : Colors.white38,
+                      color: liberado ? Colors.white : Colors.white.withValues(alpha: 0.3),
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 11,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ),
@@ -342,15 +406,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeader(int nivel) {
-    final double percentual = (xpTotal % 100) / 100.0;
+    final percentual = (xpTotal % 100) / 100.0;
 
     return Positioned(
       top: 0, left: 0, right: 0,
       child: Container(
-        padding: const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 16),
+        padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 18),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.75),
-          borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(28), bottomRight: Radius.circular(28)),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withValues(alpha: 0.85),
+              Colors.black.withValues(alpha: 0.60),
+            ],
+          ),
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(32),
+            bottomRight: Radius.circular(32),
+          ),
+          border: Border(
+            bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
         ),
         child: Column(
           children: [
@@ -362,13 +439,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     children: [
                       Container(
-                        width: 40, height: 40,
+                        width: 42, height: 42,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.green.withOpacity(0.3),
-                          border: Border.all(color: Colors.greenAccent, width: 1.5),
+                          color: Colors.green.withValues(alpha: 0.2),
+                          border: Border.all(color: Colors.greenAccent, width: 2),
                         ),
-                        child: const Icon(Icons.person, size: 22, color: Colors.greenAccent),
+                        child: const Icon(Icons.person_rounded, size: 24, color: Colors.greenAccent),
                       ),
                       const SizedBox(width: 10),
                       Column(
@@ -378,74 +455,85 @@ class _HomeScreenState extends State<HomeScreen> {
                             widget.userName.toUpperCase(),
                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                           ),
-                          Text("NÍVEL $nivel", style: const TextStyle(color: Colors.yellowAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+                          Text(
+                            'NÍVEL $nivel',
+                            style: const TextStyle(color: Colors.yellowAccent, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.15),
+                    color: Colors.amber.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.35)),
                   ),
                   child: Row(
                     children: [
-                      const Text("💰", style: TextStyle(fontSize: 14)),
-                      const SizedBox(width: 4),
-                      Text("$moedas", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                      const Text('💰', style: TextStyle(fontSize: 15)),
+                      const SizedBox(width: 5),
+                      Text(
+                        '$moedas',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("XP ${xpTotal % 100}/100", style: const TextStyle(color: Colors.white38, fontSize: 10)),
-                    Text("$xpTotal XP total", style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                    Text('XP ${xpTotal % 100}/100', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 10)),
+                    Text('$xpTotal XP total', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 10)),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
                     value: percentual.clamp(0.0, 1.0),
-                    minHeight: 7,
+                    minHeight: 8,
                     backgroundColor: Colors.white12,
                     valueColor: const AlwaysStoppedAnimation<Color>(Colors.yellowAccent),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildHeaderActionButton(
-                  icon: Icons.military_tech,
-                  color: Colors.blueAccent,
-                  label: "CONQUISTAS",
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AchievementsScreen(xpTotal: xpTotal))),
+                _botaoAcao(
+                  icon: Icons.military_tech_rounded,
+                  cor: Colors.blueAccent,
+                  rotulo: 'CONQUISTAS',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => AchievementsScreen(xpTotal: xpTotal)),
+                  ),
                 ),
-                _buildHeaderActionButton(
-                  icon: Icons.palette,
-                  color: Colors.pinkAccent,
-                  label: "LOJA",
+                _botaoAcao(
+                  icon: Icons.palette_rounded,
+                  cor: Colors.pinkAccent,
+                  rotulo: 'LOJA',
                   onTap: _abrirLoja,
                 ),
-                _buildHeaderActionButton(
-                  icon: Icons.emoji_events,
-                  color: Colors.amber,
-                  label: "RANKING",
-                  // AQUI ESTAVA FALTANDO UM PARÊNTESE ))
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RankingScreen())),
+                _botaoAcao(
+                  icon: Icons.emoji_events_rounded,
+                  cor: Colors.amber,
+                  rotulo: 'RANKING',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RankingScreen()),
+                  ),
                 ),
               ],
             ),
@@ -455,22 +543,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeaderActionButton({required IconData icon, required Color color, required String label, required VoidCallback onTap}) {
+  Widget _botaoAcao({
+    required IconData icon,
+    required Color cor,
+    required String rotulo,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(11),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: cor.withValues(alpha: 0.12),
               shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(0.6), width: 1.5),
+              border: Border.all(color: cor.withValues(alpha: 0.5), width: 1.5),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: cor, size: 22),
           ),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+          Text(rotulo, style: TextStyle(color: cor, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
         ],
       ),
     );
