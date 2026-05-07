@@ -59,6 +59,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          gh release delete "v${{ github.event.inputs.versao }}" --yes --cleanup-tag 2>/dev/null || true
           gh release create "v${{ github.event.inputs.versao }}" \
             --title "EcoQuest v${{ github.event.inputs.versao }}" \
             --notes "**Versão de produção.**\n\n${{ github.event.inputs.descricao }}" \
