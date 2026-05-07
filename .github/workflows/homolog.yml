@@ -1,0 +1,76 @@
+name: EcoQuest — Publicar APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: 'Número da versão (ex: 1.2.0)'
+        required: true
+        default: '1.0.0'
+      descricao:
+        description: 'O que mudou nessa versão?'
+        required: false
+        default: 'Nova versão do EcoQuest disponível!'
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    name: Compilar e publicar APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código fonte
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Verificar código
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Compilar APK
+        run: flutter build apk --release
+
+      - name: Renomear APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk
+
+      - name: Publicar Release no GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ github.event.inputs.versao }}" \
+            --title "EcoQuest v${{ github.event.inputs.versao }}" \
+            --notes "${{ github.event.inputs.descricao }}" \
+            "build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk"
+
+      - name: Salvar APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecoquest-v${{ github.event.inputs.versao }}
+          path: build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk
+          retention-days: 30
+
+      - name: Distribuir via Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: Univag
+          file: build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk
+          releaseNotes: "EcoQuest v${{ github.event.inputs.versao }} — ${{ github.event.inputs.descricao }}"
