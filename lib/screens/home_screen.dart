@@ -13,6 +13,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool _diaAtualRegistrado = false;
   // --- CONSTANTES DE CONFIGURAÇÃO ---
   final List<Map<String, dynamic>> listaDeFases = [
     {'id': 1, 'label': 'PRAIA', 'align': Alignment.centerLeft, 'padding': 40.0},
@@ -38,6 +39,112 @@ class _HomeScreenState extends State<HomeScreen> {
     if (nivel <= 8) return "Agente Ecológico";
     if (nivel <= 12) return "Guardião da Terra";
     return "Mestre da Sustentabilidade";
+  }
+
+  String _dataHojeISO() {
+    final hoje = DateTime.now();
+    final y = hoje.year.toString().padLeft(4, '0');
+    final m = hoje.month.toString().padLeft(2, '0');
+    final d = hoje.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  DateTime? _parseDataConquista(dynamic valor) {
+    if (valor is Timestamp) return valor.toDate();
+    if (valor is String) return DateTime.tryParse(valor);
+    return null;
+  }
+
+  Future<void> _registrarDiaDeJogoSeNecessario(
+    String docId,
+    List<dynamic> diasRegistrados,
+    Map<String, dynamic> conquistasDatas,
+  ) async {
+    if (_diaAtualRegistrado) return;
+    _diaAtualRegistrado = true;
+
+    final hoje = _dataHojeISO();
+    if (diasRegistrados.contains(hoje)) return;
+
+    final novaQtd = diasRegistrados.length + 1;
+    final update = <String, dynamic>{
+      'dias_jogados': FieldValue.arrayUnion([hoje]),
+    };
+
+    final jaDesbloqueada = conquistasDatas['mao_na_massa'] != null;
+    if (novaQtd >= 3 && !jaDesbloqueada) {
+      update['conquistas_datas.mao_na_massa'] = FieldValue.serverTimestamp();
+    }
+
+    await FirebaseFirestore.instance.collection('jogadores').doc(docId).update(update);
+
+    if (novaQtd == 3 && !jaDesbloqueada && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Conquista desbloqueada: Mao na Massa'),
+          backgroundColor: Colors.green[700],
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _registrarEcoInvestidorSeNecessario(
+    String docId,
+    int moedas,
+    Map<String, dynamic> conquistasDatas,
+  ) async {
+    final jaDesbloqueada = conquistasDatas['eco_investidor'] != null;
+    if (jaDesbloqueada || moedas < 500) return;
+
+    await FirebaseFirestore.instance.collection('jogadores').doc(docId).update({
+      'conquistas_datas.eco_investidor': FieldValue.serverTimestamp(),
+    });
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Conquista desbloqueada: Eco Investidor'),
+        backgroundColor: Colors.green[700],
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _registrarConquistasPorNivelSeNecessario(
+    String docId,
+    int nivel,
+    Map<String, dynamic> conquistasDatas,
+  ) async {
+    final update = <String, dynamic>{};
+    final novas = <String>[];
+
+    if (nivel >= 10 && conquistasDatas['nivel_raiz'] == null) {
+      update['conquistas_datas.nivel_raiz'] = FieldValue.serverTimestamp();
+      novas.add('Nivel Raiz');
+    }
+    if (nivel >= 25 && conquistasDatas['lenda_sustentavel'] == null) {
+      update['conquistas_datas.lenda_sustentavel'] = FieldValue.serverTimestamp();
+      novas.add('Lenda Sustentavel');
+    }
+
+    if (update.isEmpty) return;
+    await FirebaseFirestore.instance.collection('jogadores').doc(docId).update(update);
+
+    if (!mounted) return;
+    final msg = novas.length == 1
+        ? 'Conquista desbloqueada: ${novas.first}'
+        : 'Conquistas desbloqueadas: ${novas.join(', ')}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.green[700],
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   // --- MODAL DE PERFIL ---
@@ -109,11 +216,42 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (jaComprado) {
                           await FirebaseFirestore.instance.collection('jogadores').doc(docId).update({'tema_ativo': tema['id']});
                         } else if (moedasAtuais >= tema['preco']) {
-                          await FirebaseFirestore.instance.collection('jogadores').doc(docId).update({
+                          final totalAposCompra = (comprados.contains(tema['id']) ? comprados.length : comprados.length + 1);
+                          final desbloqueiaColecionador = totalAposCompra >= listaDeTemas.length;
+                          final doc = await FirebaseFirestore.instance.collection('jogadores').doc(docId).get();
+                          final dadosAtual = doc.data() ?? {};
+                          final conquistasDatas = Map<String, dynamic>.from(dadosAtual['conquistas_datas'] ?? {});
+                          final consumidorJa = conquistasDatas['consumidor_consciente'] != null;
+                          final colecionadorJa = conquistasDatas['colecionador_temas'] != null;
+
+                          final update = <String, dynamic>{
                             'moedas': moedasAtuais - tema['preco'],
                             'temas_comprados': FieldValue.arrayUnion([tema['id']]),
-                            'tema_ativo': tema['id']
+                            'tema_ativo': tema['id'],
+                          };
+                          final novas = <String>[];
+                          if (!consumidorJa) {
+                            update['conquistas_datas.consumidor_consciente'] = FieldValue.serverTimestamp();
+                            novas.add('Consumidor Consciente');
+                          }
+                          if (desbloqueiaColecionador && !colecionadorJa) {
+                            update['conquistas_datas.colecionador_temas'] = FieldValue.serverTimestamp();
+                            novas.add('Colecionador de Temas');
+                          }
+
+                          await FirebaseFirestore.instance.collection('jogadores').doc(docId).update({
+                            ...update,
                           });
+                          if (novas.isNotEmpty && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(novas.length == 1 ? 'Conquista desbloqueada: ${novas.first}' : 'Conquistas desbloqueadas: ${novas.join(', ')}'),
+                                backgroundColor: Colors.green[700],
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
                         }
                         Navigator.pop(context);
                       },
@@ -146,8 +284,22 @@ class _HomeScreenState extends State<HomeScreen> {
           List<dynamic> liberadas = List.from(dados['fases_liberadas'] ?? [1]);
           String temaAtivoId = dados['tema_ativo'] ?? 'padrao';
           List<dynamic> temasComprados = dados['temas_comprados'] ?? ['padrao'];
+          List<dynamic> diasJogados = List.from(dados['dias_jogados'] ?? []);
+          Map<String, dynamic> conquistasDatas = Map<String, dynamic>.from(dados['conquistas_datas'] ?? {});
+          bool sequenciaVerdeDesbloqueada = dados['sequencia_verde_desbloqueada'] == true;
+          int sequenciaAcertos = dados['sequencia_acertos'] ?? 0;
+          int respostasRapidas = dados['respostas_rapidas'] ?? 0;
+          int perguntasRespondidas = dados['perguntas_respondidas'] ?? 0;
+          bool semDesperdicioDesbloqueada = conquistasDatas['sem_desperdicio'] != null;
+          bool ecoInvestidorDesbloqueada = conquistasDatas['eco_investidor'] != null;
+          bool mestreReciclagemDesbloqueada = conquistasDatas['mestre_reciclagem'] != null;
+          bool velocidadeSolarDesbloqueada = conquistasDatas['velocidade_solar'] != null;
+          bool consumidorConsciente = temasComprados.any((id) => id != 'padrao');
           var temaAtual = listaDeTemas.firstWhere((t) => t['id'] == temaAtivoId, orElse: () => listaDeTemas[0]);
           int nivelCalculado = (xpTotal ~/ 100) + 1;
+          _registrarDiaDeJogoSeNecessario(docId, diasJogados, conquistasDatas);
+          _registrarEcoInvestidorSeNecessario(docId, moedas, conquistasDatas);
+          _registrarConquistasPorNivelSeNecessario(docId, nivelCalculado, conquistasDatas);
 
           return Container(
             decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: List<Color>.from(temaAtual['cores']))),
@@ -160,12 +312,31 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(_obterTitulo(nivelCalculado).toUpperCase(), style: const TextStyle(fontSize: 13, letterSpacing: 2, color: Colors.yellowAccent, fontWeight: FontWeight.bold)),
                       const Text("MISSÕES AMBIENTAIS", style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white)),
                       const SizedBox(height: 40),
-                      ...listaDeFases.map((fase) => _buildMissionNode(fase, liberadas, docId, xpTotal, nivelCalculado, moedas)).toList(),
+                      ...listaDeFases.map((fase) => _buildMissionNode(fase, liberadas, docId, xpTotal, nivelCalculado, moedas, sequenciaAcertos, sequenciaVerdeDesbloqueada, respostasRapidas, velocidadeSolarDesbloqueada)).toList(),
                       const SizedBox(height: 100),
                     ],
                   ),
                 ),
-                _buildHeader(dados, nivelCalculado, xpTotal, moedas, docId, temasComprados, temaAtivoId),
+                _buildHeader(
+                  dados,
+                  nivelCalculado,
+                  xpTotal,
+                  moedas,
+                  docId,
+                  temasComprados,
+                  temaAtivoId,
+                  liberadas,
+                  diasJogados,
+                  consumidorConsciente,
+                  sequenciaVerdeDesbloqueada,
+                  respostasRapidas,
+                  perguntasRespondidas,
+                  semDesperdicioDesbloqueada,
+                  ecoInvestidorDesbloqueada,
+                  mestreReciclagemDesbloqueada,
+                  velocidadeSolarDesbloqueada,
+                  conquistasDatas,
+                ),
               ],
             ),
           );
@@ -174,7 +345,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMissionNode(Map<String, dynamic> fase, List<dynamic> liberadas, String docId, int xp, int nivel, int moedas) {
+  Widget _buildMissionNode(
+    Map<String, dynamic> fase,
+    List<dynamic> liberadas,
+    String docId,
+    int xp,
+    int nivel,
+    int moedas,
+    int sequenciaAcertos,
+    bool sequenciaVerdeDesbloqueada,
+    int respostasRapidas,
+    bool velocidadeSolarDesbloqueada,
+  ) {
     bool isUnlocked = liberadas.contains(fase['id']);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 30),
@@ -185,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: GestureDetector(
             onTap: () {
               if (isUnlocked) {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => GameScreen(faseId: fase['id'], docId: docId, xpAtual: xp, nivelAtual: nivel, moedasAtuais: moedas)));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => GameScreen(faseId: fase['id'], docId: docId, xpAtual: xp, nivelAtual: nivel, moedasAtuais: moedas, sequenciaAcertosAtual: sequenciaAcertos, sequenciaVerdeJaDesbloqueada: sequenciaVerdeDesbloqueada, respostasRapidasAtual: respostasRapidas, velocidadeSolarJaDesbloqueada: velocidadeSolarDesbloqueada)));
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fase bloqueada!")));
               }
@@ -207,7 +389,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader(Map<String, dynamic> dados, int nivel, int xpTotal, int moedas, String docId, List<dynamic> comprados, String ativo) {
+  Widget _buildHeader(
+    Map<String, dynamic> dados,
+    int nivel,
+    int xpTotal,
+    int moedas,
+    String docId,
+    List<dynamic> comprados,
+    String ativo,
+    List<dynamic> liberadas,
+    List<dynamic> diasJogados,
+    bool consumidorConsciente,
+    bool sequenciaVerdeDesbloqueada,
+    int respostasRapidas,
+    int perguntasRespondidas,
+    bool semDesperdicioDesbloqueada,
+    bool ecoInvestidorDesbloqueada,
+    bool mestreReciclagemDesbloqueada,
+    bool velocidadeSolarDesbloqueada,
+    Map<String, dynamic> conquistasDatas,
+  ) {
     double percentual = (xpTotal % 100) / 100.0;
     return Positioned(
       top: 0, left: 0, right: 0,
@@ -253,7 +454,42 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildHeaderActionButton(icon: Icons.military_tech, color: Colors.blueAccent, label: "CONQUISTAS", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AchievementsScreen(xpTotal: xpTotal)))),
+                _buildHeaderActionButton(
+                  icon: Icons.military_tech,
+                  color: Colors.blueAccent,
+                  label: "CONQUISTAS",
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AchievementsScreen(
+                        xpTotal: xpTotal,
+                        praiaConcluida: liberadas.contains(2),
+                        diasJogados: diasJogados.length,
+                        consumidorConsciente: consumidorConsciente,
+                        sequenciaVerdeDesbloqueada: sequenciaVerdeDesbloqueada,
+                        dataPrimeiroPasso: _parseDataConquista(conquistasDatas['primeiro_passo']),
+                        dataMaoNaMassa: _parseDataConquista(conquistasDatas['mao_na_massa']),
+                        dataConsumidorConsciente: _parseDataConquista(conquistasDatas['consumidor_consciente']),
+                        dataSequenciaVerde: _parseDataConquista(conquistasDatas['sequencia_verde']),
+                        semDesperdicioDesbloqueada: semDesperdicioDesbloqueada,
+                        ecoInvestidorDesbloqueada: ecoInvestidorDesbloqueada,
+                        mestreReciclagemProgresso: perguntasRespondidas.clamp(0, 20),
+                        mestreReciclagemDesbloqueada: mestreReciclagemDesbloqueada,
+                        dataSemDesperdicio: _parseDataConquista(conquistasDatas['sem_desperdicio']),
+                        dataEcoInvestidor: _parseDataConquista(conquistasDatas['eco_investidor']),
+                        dataMestreReciclagem: _parseDataConquista(conquistasDatas['mestre_reciclagem']),
+                        temasComprados: comprados.length,
+                        totalTemas: listaDeTemas.length,
+                        nivelAtual: nivel,
+                        respostasRapidas: respostasRapidas,
+                        dataColecionadorTemas: _parseDataConquista(conquistasDatas['colecionador_temas']),
+                        dataNivelRaiz: _parseDataConquista(conquistasDatas['nivel_raiz']),
+                        dataVelocidadeSolar: _parseDataConquista(conquistasDatas['velocidade_solar']),
+                        dataLendaSustentavel: _parseDataConquista(conquistasDatas['lenda_sustentavel']),
+                      ),
+                    ),
+                  ),
+                ),
                 _buildHeaderActionButton(icon: Icons.palette, color: Colors.pinkAccent, label: "LOJA", onTap: () => _abrirLoja(docId, moedas, comprados, ativo)),
                 _buildHeaderActionButton(icon: Icons.emoji_events, color: Colors.amber, label: "RANKING", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RankingScreen()))),
               ],

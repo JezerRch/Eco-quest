@@ -44,37 +44,40 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBuqwMQ_mTHVa57vZgtr7MC1qG_1dBIYKM',
-    appId: '1:191915950193:web:f851a7ac4b5ba4b9c01bd0',
-    messagingSenderId: '191915950193',
-    projectId: 'ecoquest-a7140',
-    authDomain: 'ecoquest-a7140.firebaseapp.com',
-    storageBucket: 'ecoquest-a7140.firebasestorage.app',
+    apiKey: 'AIzaSyBxIolU7yoKzAVCXn3KSfjlZsYm8iQn3vM',
+    appId: '1:189634070073:web:ad28beebbb564c0ddbefe8',
+    messagingSenderId: '189634070073',
+    projectId: 'ecoquest-ee7d4',
+    authDomain: 'ecoquest-ee7d4.firebaseapp.com',
+    storageBucket: 'ecoquest-ee7d4.firebasestorage.app',
+    measurementId: 'G-LETDLX2R1K',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCpVsv7qhMSWhBFeDizh7trTWbWDqu7wmQ',
-    appId: '1:191915950193:android:be8e2c84de7555eac01bd0',
-    messagingSenderId: '191915950193',
-    projectId: 'ecoquest-a7140',
-    storageBucket: 'ecoquest-a7140.firebasestorage.app',
+    apiKey: 'AIzaSyCHjsh2_T09cZNNAmg6dq8MYql6UmnDyaA',
+    appId: '1:189634070073:android:5462097247c84a74dbefe8',
+    messagingSenderId: '189634070073',
+    projectId: 'ecoquest-ee7d4',
+    storageBucket: 'ecoquest-ee7d4.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBgEgHd6ONajP7QLHFoKQ6wK2NXr381XAc',
-    appId: '1:191915950193:ios:c87ebda470a01422c01bd0',
-    messagingSenderId: '191915950193',
-    projectId: 'ecoquest-a7140',
-    storageBucket: 'ecoquest-a7140.firebasestorage.app',
+    apiKey: 'AIzaSyC_dOO8eugHR5Dz0WVBpNNJFwziqQn4yzI',
+    appId: '1:189634070073:ios:8662329a446fe06cdbefe8',
+    messagingSenderId: '189634070073',
+    projectId: 'ecoquest-ee7d4',
+    storageBucket: 'ecoquest-ee7d4.firebasestorage.app',
     iosBundleId: 'ecoquest.com.ecoQuest',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBuqwMQ_mTHVa57vZgtr7MC1qG_1dBIYKM',
-    appId: '1:191915950193:web:49bba8d212a8886bc01bd0',
-    messagingSenderId: '191915950193',
-    projectId: 'ecoquest-a7140',
-    authDomain: 'ecoquest-a7140.firebaseapp.com',
-    storageBucket: 'ecoquest-a7140.firebasestorage.app',
+    apiKey: 'AIzaSyBxIolU7yoKzAVCXn3KSfjlZsYm8iQn3vM',
+    appId: '1:189634070073:web:a73ab7c46df47364dbefe8',
+    messagingSenderId: '189634070073',
+    projectId: 'ecoquest-ee7d4',
+    authDomain: 'ecoquest-ee7d4.firebaseapp.com',
+    storageBucket: 'ecoquest-ee7d4.firebasestorage.app',
+    measurementId: 'G-B13KWLW8V6',
   );
+
 }
