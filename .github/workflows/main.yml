@@ -1,0 +1,74 @@
+name: EcoQuest — Publicar APK (Produção)
+
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: 'Versão (ex: 1.2.0)'
+        required: true
+        default: '1.0.0'
+      descricao:
+        description: 'O que mudou nessa versão?'
+        required: false
+        default: 'Nova versão disponível!'
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  publicar-producao:
+    name: Build e publicar APK — Produção
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código da branch main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Verificar código
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Compilar APK
+        run: flutter build apk --release
+
+      - name: Renomear APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk
+
+      - name: Publicar Release no GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete "v${{ github.event.inputs.versao }}" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "v${{ github.event.inputs.versao }}" \
+            --title "EcoQuest v${{ github.event.inputs.versao }}" \
+            --notes "**Versão de produção.**\n\n${{ github.event.inputs.descricao }}" \
+            "build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk"
+
+      - name: Salvar APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecoquest-v${{ github.event.inputs.versao }}
+          path: build/app/outputs/flutter-apk/ecoquest-v${{ github.event.inputs.versao }}.apk
+          retention-days: 30
+
