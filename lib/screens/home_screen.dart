@@ -14,6 +14,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _diaAtualRegistrado = false;
+  bool _ecoInvestidorRegistrado = false;
+  bool _conquistasPorNivelRegistradas = false;
   // --- CONSTANTES DE CONFIGURAÇÃO ---
   final List<Map<String, dynamic>> listaDeFases = [
     {'id': 1, 'label': 'PRAIA', 'align': Alignment.centerLeft, 'padding': 40.0},
@@ -95,9 +97,12 @@ class _HomeScreenState extends State<HomeScreen> {
     int moedas,
     Map<String, dynamic> conquistasDatas,
   ) async {
+    if (_ecoInvestidorRegistrado) return;
     final jaDesbloqueada = conquistasDatas['eco_investidor'] != null;
-    if (jaDesbloqueada || moedas < 500) return;
+    if (jaDesbloqueada) { _ecoInvestidorRegistrado = true; return; }
+    if (moedas < 500) return;
 
+    _ecoInvestidorRegistrado = true;
     await FirebaseFirestore.instance.collection('jogadores').doc(docId).update({
       'conquistas_datas.eco_investidor': FieldValue.serverTimestamp(),
     });
@@ -118,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
     int nivel,
     Map<String, dynamic> conquistasDatas,
   ) async {
+    if (_conquistasPorNivelRegistradas) return;
     final update = <String, dynamic>{};
     final novas = <String>[];
 
@@ -130,7 +136,13 @@ class _HomeScreenState extends State<HomeScreen> {
       novas.add('Lenda Sustentavel');
     }
 
-    if (update.isEmpty) return;
+    if (update.isEmpty) {
+      if (conquistasDatas['nivel_raiz'] != null && conquistasDatas['lenda_sustentavel'] != null) {
+        _conquistasPorNivelRegistradas = true;
+      }
+      return;
+    }
+    _conquistasPorNivelRegistradas = true;
     await FirebaseFirestore.instance.collection('jogadores').doc(docId).update(update);
 
     if (!mounted) return;
@@ -312,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(_obterTitulo(nivelCalculado).toUpperCase(), style: const TextStyle(fontSize: 13, letterSpacing: 2, color: Colors.yellowAccent, fontWeight: FontWeight.bold)),
                       const Text("MISSÕES AMBIENTAIS", style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white)),
                       const SizedBox(height: 40),
-                      ...listaDeFases.map((fase) => _buildMissionNode(fase, liberadas, docId, xpTotal, nivelCalculado, moedas, sequenciaAcertos, sequenciaVerdeDesbloqueada, respostasRapidas, velocidadeSolarDesbloqueada)).toList(),
+                      ...listaDeFases.map((fase) => _buildMissionNode(fase, liberadas, docId, xpTotal, nivelCalculado, moedas, sequenciaAcertos, sequenciaVerdeDesbloqueada, respostasRapidas, velocidadeSolarDesbloqueada, perguntasRespondidas, mestreReciclagemDesbloqueada)).toList(),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -356,6 +368,8 @@ class _HomeScreenState extends State<HomeScreen> {
     bool sequenciaVerdeDesbloqueada,
     int respostasRapidas,
     bool velocidadeSolarDesbloqueada,
+    int perguntasRespondidas,
+    bool mestreReciclagemDesbloqueada,
   ) {
     bool isUnlocked = liberadas.contains(fase['id']);
     return Padding(
@@ -367,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: GestureDetector(
             onTap: () {
               if (isUnlocked) {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => GameScreen(faseId: fase['id'], docId: docId, xpAtual: xp, nivelAtual: nivel, moedasAtuais: moedas, sequenciaAcertosAtual: sequenciaAcertos, sequenciaVerdeJaDesbloqueada: sequenciaVerdeDesbloqueada, respostasRapidasAtual: respostasRapidas, velocidadeSolarJaDesbloqueada: velocidadeSolarDesbloqueada)));
+                Navigator.push(context, MaterialPageRoute(builder: (context) => GameScreen(faseId: fase['id'], docId: docId, xpAtual: xp, nivelAtual: nivel, moedasAtuais: moedas, sequenciaAcertosAtual: sequenciaAcertos, sequenciaVerdeJaDesbloqueada: sequenciaVerdeDesbloqueada, respostasRapidasAtual: respostasRapidas, velocidadeSolarJaDesbloqueada: velocidadeSolarDesbloqueada, perguntasRespondidasAtual: perguntasRespondidas, mestreReciclagemJaDesbloqueada: mestreReciclagemDesbloqueada)));
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fase bloqueada!")));
               }
