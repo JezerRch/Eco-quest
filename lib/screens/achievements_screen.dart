@@ -156,7 +156,7 @@ class AchievementsScreen extends StatelessWidget {
       progressoAtual: xpTotal,
       progressoMeta: 1100,
       percentualGlobal: 21,
-      dataDesbloqueio: DateTime(2026, 5, 9),
+      dataDesbloqueio: xpTotal >= 1100 ? DateTime(2026, 5, 9) : null,
     ),
     AchievementModel(
       id: 'defensor_floresta',
@@ -168,7 +168,7 @@ class AchievementsScreen extends StatelessWidget {
       progressoAtual: xpTotal,
       progressoMeta: 1300,
       percentualGlobal: 16,
-      dataDesbloqueio: DateTime(2026, 5, 9),
+      dataDesbloqueio: xpTotal >= 1300 ? DateTime(2026, 5, 9) : null,
     ),
     AchievementModel(
       id: 'colecionador_temas',
@@ -272,14 +272,14 @@ class AchievementsScreen extends StatelessWidget {
             if (listaAlcancadas.isEmpty)
               _buildSecaoVazia('Nenhuma conquista alcancada ainda.')
             else
-              ...listaAlcancadas.map((item) => _buildConquistaCard(item)).toList(),
+              ...listaAlcancadas.map((item) => _buildConquistaCard(item)),
             const SizedBox(height: 6),
             _buildSecaoTitulo('Conquistas Bloqueadas', listaBloqueadas.length),
             const SizedBox(height: 8),
             if (listaBloqueadas.isEmpty)
               _buildSecaoVazia('Voce desbloqueou tudo!')
             else
-              ...listaBloqueadas.map((item) => _buildConquistaCard(item)).toList(),
+              ...listaBloqueadas.map((item) => _buildConquistaCard(item)),
           ],
         ),
       ),
@@ -293,7 +293,7 @@ class AchievementsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.14),
+        color: Colors.white.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white24),
       ),
@@ -368,7 +368,7 @@ class AchievementsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white24),
       ),
@@ -388,8 +388,9 @@ class AchievementsScreen extends StatelessWidget {
       desbloqueada: item.desbloqueada,
       dificuldade: item.dificuldade,
     );
-    final progressoPercentual =
-        (item.progressoAtual / item.progressoMeta).clamp(0.0, 1.0);
+    final progressoPercentual = item.progressoMeta > 0
+        ? (item.progressoAtual / item.progressoMeta).clamp(0.0, 1.0)
+        : 0.0;
     final progressoFaltante =
         (item.progressoMeta - item.progressoAtual).clamp(0, item.progressoMeta);
 
@@ -409,7 +410,7 @@ class AchievementsScreen extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.65),
+              color: Colors.white.withValues(alpha: 0.65),
             ),
             child: Icon(
               exibicaoOculta ? Icons.help_outline : item.imagem,
@@ -542,9 +543,9 @@ class AchievementsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: paleta.border.withOpacity(0.15),
+        color: paleta.border.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: paleta.border.withOpacity(0.35)),
+        border: Border.all(color: paleta.border.withValues(alpha: 0.35)),
       ),
       child: Text(
         texto,

@@ -14,7 +14,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _nameController = TextEditingController();
   bool _isLoading = false;
 
-  // Função para salvar no Firebase e no LocalStorage
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _registrarJogador() async {
     String nome = _nameController.text.trim();
 
@@ -33,30 +38,36 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     try {
       final collection = FirebaseFirestore.instance.collection('jogadores');
 
-      // 2. Criar um documento com os dados iniciais completos para a Gamificação
+      final existing = await collection.where('nome', isEqualTo: nome).limit(1).get();
+      if (existing.docs.isNotEmpty) {
+        final existingDoc = existing.docs.first;
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_name', nome);
+        await prefs.setString('user_id', existingDoc.id);
+        if (!mounted) return;
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen(userName: nome)));
+        return;
+      }
+
       DocumentReference docRef = await collection.add({
         'nome': nome,
         'nome_search': nome.toLowerCase(),
-        'moedas': 0,                  // Saldo inicial para o usuário testar a LOJA
+        'moedas': 0,
         'nivel': 1,
         'xp': 0,
         'status': 'ativo',
         'data_criacao': FieldValue.serverTimestamp(),
-        'fases_liberadas': [1],          // Começa com a Praia desbloqueada
-
-        // --- CAMPOS NECESSÁRIOS PARA A CUSTOMIZAÇÃO (FUNDOS) ---
-        'tema_ativo': 'padrao',          // Define o ID do tema inicial
-        'temas_comprados': ['padrao'],   // Lista de IDs que o usuário já possui
+        'fases_liberadas': [1],
+        'tema_ativo': 'padrao',
+        'temas_comprados': ['padrao'],
       });
 
-      // Salva localmente para não precisar logar toda vez
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_name', nome);
       await prefs.setString('user_id', docRef.id);
 
       if (!mounted) return;
 
-      // Navega para a Home passando o nome do usuário
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomeScreen(userName: nome)),
@@ -78,7 +89,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Evita que o teclado quebre o layout
+      resizeToAvoidBottomInset: false,
       body: Container(
         width: double.infinity,
         decoration: const BoxDecoration(
@@ -89,7 +100,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         ),
         child: Stack(
           children: [
-            // --- CABEÇALHO ---
             Positioned(
               top: 80,
               left: 0,
@@ -122,7 +132,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ),
             ),
 
-            // --- FORMULÁRIO E BOTÃO ---
             Positioned(
               bottom: 50,
               left: 0,
@@ -133,9 +142,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     margin: const EdgeInsets.symmetric(horizontal: 35),
                     padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
+                      color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(35),
-                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
                       boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 15, spreadRadius: 2)],
                     ),
                     child: Column(
@@ -163,7 +172,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             hintText: "DIGITE AQUI...",
                             hintStyle: TextStyle(color: Colors.grey[500], fontSize: 18),
                             filled: true,
-                            fillColor: Colors.white.withOpacity(0.95),
+                            fillColor: Colors.white.withValues(alpha: 0.95),
                             contentPadding: const EdgeInsets.symmetric(vertical: 18),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(50),
@@ -192,7 +201,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           borderRadius: BorderRadius.circular(40),
                           border: Border.all(color: Colors.white, width: 4),
                           boxShadow: [
-                            BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 12, offset: Offset(0, 6)),
+                            BoxShadow(color: Colors.orange.withValues(alpha: 0.3), blurRadius: 12, offset: Offset(0, 6)),
                             const BoxShadow(color: Colors.black45, blurRadius: 8, offset: Offset(0, 4)),
                           ],
                         ),

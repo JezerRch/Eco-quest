@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'game_screen.dart';
 import 'ranking_screen.dart';
@@ -16,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _diaAtualRegistrado = false;
   bool _ecoInvestidorRegistrado = false;
   bool _conquistasPorNivelRegistradas = false;
-  // --- CONSTANTES DE CONFIGURAÇÃO ---
+
   final List<Map<String, dynamic>> listaDeFases = [
     {'id': 1, 'label': 'PRAIA', 'align': Alignment.centerLeft, 'padding': 40.0},
     {'id': 2, 'label': 'FLORESTA', 'align': Alignment.centerRight, 'padding': 40.0},
@@ -34,7 +35,6 @@ class _HomeScreenState extends State<HomeScreen> {
     {'id': 'deserto', 'nome': 'Vale Dourado', 'cores': [Color(0xFFFFB300), Color(0xFFE65100)], 'preco': 1200},
   ];
 
-  // --- LÓGICA AUXILIAR ---
   String _obterTitulo(int nivel) {
     if (nivel <= 2) return "Recrutinha Ambiental";
     if (nivel <= 5) return "Protetor Local";
@@ -55,6 +55,32 @@ class _HomeScreenState extends State<HomeScreen> {
     if (valor is Timestamp) return valor.toDate();
     if (valor is String) return DateTime.tryParse(valor);
     return null;
+  }
+
+  String _faseEmoji(int faseId) {
+    switch (faseId) {
+      case 1: return '🏖️';
+      case 2: return '🌲';
+      case 3: return '🏙️';
+      case 4: return '🏫';
+      case 5: return '🏞️';
+      case 6: return '⚡';
+      case 7: return '🌿';
+      default: return '🎯';
+    }
+  }
+
+  Color _faseCor(int faseId) {
+    switch (faseId) {
+      case 1: return Colors.cyan;
+      case 2: return Colors.green;
+      case 3: return Colors.blueGrey;
+      case 4: return Colors.blue;
+      case 5: return Colors.teal;
+      case 6: return Colors.amber;
+      case 7: return Colors.lightGreen;
+      default: return Colors.orangeAccent;
+    }
   }
 
   Future<void> _registrarDiaDeJogoSeNecessario(
@@ -159,7 +185,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- MODAL DE PERFIL ---
   void _mostrarPerfil(Map<String, dynamic> dados, int nivel) {
     showDialog(
       context: context,
@@ -172,12 +197,12 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const CircleAvatar(radius: 40, backgroundColor: Colors.green, child: Icon(Icons.person, size: 50, color: Colors.white)),
             const SizedBox(height: 15),
-            Text(dados['nome'].toString().toUpperCase(), style: const TextStyle(color: Colors.yellowAccent, fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(((dados['nome'] as String?) ?? 'Jogador').toUpperCase(), style: const TextStyle(color: Colors.yellowAccent, fontSize: 20, fontWeight: FontWeight.bold)),
             Text(_obterTitulo(nivel), style: const TextStyle(color: Colors.white70, fontSize: 14)),
             const Divider(color: Colors.white24, height: 30),
             _rowInfoPerfil("Experiência Total:", "${dados['xp']} XP"),
             _rowInfoPerfil("Moedas Acumuladas:", "💰 ${dados['moedas']}"),
-            _rowInfoPerfil("Fases Liberadas:", "${(dados['fases_liberadas'] as List).length} / 7"),
+            _rowInfoPerfil("Fases Liberadas:", "${((dados['fases_liberadas'] as List?) ?? []).length} / 7"),
           ],
         ),
         actions: [
@@ -200,7 +225,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- LOJA DE FUNDOS ---
+  void _confirmarSaida() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sair do jogo?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCELAR')),
+          TextButton(
+            onPressed: () => SystemNavigator.pop(),
+            child: const Text('SAIR', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _abrirLoja(String docId, int moedasAtuais, List<dynamic> comprados, String ativo) {
     showModalBottomSheet(
       context: context,
@@ -237,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final colecionadorJa = conquistasDatas['colecionador_temas'] != null;
 
                           final update = <String, dynamic>{
-                            'moedas': moedasAtuais - tema['preco'],
+                            'moedas': FieldValue.increment(-tema['preco']),
                             'temas_comprados': FieldValue.arrayUnion([tema['id']]),
                             'tema_ativo': tema['id'],
                           };
@@ -286,6 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('jogadores').where('nome', isEqualTo: widget.userName).snapshots(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) return Center(child: Text('Erro ao carregar dados: ${snapshot.error}'));
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const Center(child: CircularProgressIndicator());
 
           var doc = snapshot.data!.docs.first;
@@ -320,11 +361,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 SingleChildScrollView(
                   child: Column(
                     children: [
-                      const SizedBox(height: 220), // Ajustado para o novo header com nome
+                      const SizedBox(height: 220),
                       Text(_obterTitulo(nivelCalculado).toUpperCase(), style: const TextStyle(fontSize: 13, letterSpacing: 2, color: Colors.yellowAccent, fontWeight: FontWeight.bold)),
                       const Text("MISSÕES AMBIENTAIS", style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white)),
                       const SizedBox(height: 40),
-                      ...listaDeFases.map((fase) => _buildMissionNode(fase, liberadas, docId, xpTotal, nivelCalculado, moedas, sequenciaAcertos, sequenciaVerdeDesbloqueada, respostasRapidas, velocidadeSolarDesbloqueada, perguntasRespondidas, mestreReciclagemDesbloqueada)).toList(),
+                      ...listaDeFases.map((fase) => _buildMissionNode(fase, liberadas, docId, xpTotal, nivelCalculado, moedas, sequenciaAcertos, sequenciaVerdeDesbloqueada, respostasRapidas, velocidadeSolarDesbloqueada, perguntasRespondidas, mestreReciclagemDesbloqueada)),
                       const SizedBox(height: 100),
                     ],
                   ),
@@ -372,6 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool mestreReciclagemDesbloqueada,
   ) {
     bool isUnlocked = liberadas.contains(fase['id']);
+    final Color borderColor = isUnlocked ? _faseCor(fase['id'] as int) : Colors.white30;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 30),
       child: Align(
@@ -390,8 +432,15 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Container(
                   width: 85, height: 85,
-                  decoration: BoxDecoration(color: isUnlocked ? Colors.white : Colors.black26, shape: BoxShape.circle, border: Border.all(color: isUnlocked ? Colors.orangeAccent : Colors.white30, width: 5), boxShadow: [if (isUnlocked) const BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))]),
-                  child: Icon(isUnlocked ? Icons.play_arrow_rounded : Icons.lock_outline, color: isUnlocked ? Colors.green : Colors.white38, size: 50),
+                  decoration: BoxDecoration(
+                    color: isUnlocked ? Colors.white : Colors.black26,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: borderColor, width: 5),
+                    boxShadow: [if (isUnlocked) const BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))],
+                  ),
+                  child: isUnlocked
+                      ? Center(child: Text(_faseEmoji(fase['id'] as int), style: const TextStyle(fontSize: 36)))
+                      : const Icon(Icons.lock_outline, color: Colors.white38, size: 50),
                 ),
                 const SizedBox(height: 8),
                 Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), decoration: BoxDecoration(color: Colors.black38, borderRadius: BorderRadius.circular(10)), child: Text(fase['label'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
@@ -428,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
       top: 0, left: 0, right: 0,
       child: Container(
         padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 15),
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.8), borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30))),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.8), borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30))),
         child: Column(
           children: [
             Row(
@@ -450,10 +499,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white24)),
-                  child: Row(children: [const Text("💰 "), Text("$moedas", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))]),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white24)),
+                      child: Row(children: [const Text("💰 "), Text("$moedas", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))]),
+                    ),
+                    IconButton(
+                      onPressed: _confirmarSaida,
+                      icon: const Icon(Icons.exit_to_app, color: Colors.white70),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -505,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 _buildHeaderActionButton(icon: Icons.palette, color: Colors.pinkAccent, label: "LOJA", onTap: () => _abrirLoja(docId, moedas, comprados, ativo)),
-                _buildHeaderActionButton(icon: Icons.emoji_events, color: Colors.amber, label: "RANKING", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RankingScreen()))),
+                _buildHeaderActionButton(icon: Icons.emoji_events, color: Colors.amber, label: "RANKING", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => RankingScreen(userName: widget.userName)))),
               ],
             )
           ],
@@ -519,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       child: Column(
         children: [
-          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle, border: Border.all(color: color, width: 1.5)), child: Icon(icon, color: color, size: 22)),
+          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle, border: Border.all(color: color, width: 1.5)), child: Icon(icon, color: color, size: 22)),
           const SizedBox(height: 4),
           Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
         ],

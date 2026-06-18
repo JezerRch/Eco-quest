@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -37,6 +38,10 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+
+  late Timer _timer;
+  int _segundosRestantes = 12;
+  bool _isMuted = false;
 
   final Map<String, Map<String, String>> _dadosItens = {
     'Copo de Plástico': {
@@ -95,6 +100,70 @@ class _GameScreenState extends State<GameScreen> {
       'info': 'Reciclar alumínio gasta apenas 5% da energia de extrair o minério.',
       'tempo': '200 a 500 anos',
     },
+    'Lápis Usado': {
+      'info': 'O grafite do lápis é mineral, mas o corpo de madeira é reciclável com papel.',
+      'tempo': '2 a 6 meses (madeira)',
+    },
+    'Caixinha de Suco': {
+      'info': 'Embalagem Tetra Pak é feita de papel, plástico e alumínio — precisa de descarte especial.',
+      'tempo': 'Até 100 anos sem reciclagem',
+    },
+    'Garrafa Pet': {
+      'info': 'Uma garrafa PET pode virar fibra polar para casacos e outros produtos.',
+      'tempo': '400 a 500 anos',
+    },
+    'Caneta Velha': {
+      'info': 'Canetas são feitas de plástico e podem ser descartadas em coletores especiais.',
+      'tempo': '450 anos',
+    },
+    'Linha de Pesca': {
+      'info': 'Linhas de pesca matam animais marinhos ao se enrolarem em pescoços e nadadeiras.',
+      'tempo': '600 anos',
+    },
+    'Lata no Rio': {
+      'info': 'Uma lata no rio libera substâncias que contaminam a água por anos.',
+      'tempo': '10 a 100 anos',
+    },
+    'Garrafa no Rio': {
+      'info': 'Garrafas de vidro no rio fragmentam e machucam animais aquáticos.',
+      'tempo': 'Mais de 1 milhão de anos',
+    },
+    'Isopor': {
+      'info': 'O isopor (EPS) demora muito para se decompor e nunca vira adubo.',
+      'tempo': 'Mais de 5.000 anos',
+    },
+    'Fio de Cobre': {
+      'info': 'O cobre é um metal nobre altamente valorizado para reciclagem industrial.',
+      'tempo': 'Indeterminado (não se degrada)',
+    },
+    'Tambor de Metal': {
+      'info': 'Tambores industriais podem conter resíduos perigosos e precisam de descarte especializado.',
+      'tempo': 'Centenas de anos',
+    },
+    'Frasco Químico': {
+      'info': 'Frascos de produtos químicos precisam ser descartados em pontos específicos — nunca no lixo comum.',
+      'tempo': '450 anos',
+    },
+    'Lâmpada Usada': {
+      'info': 'Lâmpadas fluorescentes têm mercúrio — descarte obrigatório em pontos de coleta.',
+      'tempo': 'Indeterminado (vidro + metal + mercúrio)',
+    },
+    'Papelão Industrial': {
+      'info': 'O papelão industrial é um dos materiais mais reciclados do mundo.',
+      'tempo': '2 a 4 meses',
+    },
+    'Folha de Papel': {
+      'info': 'Uma tonelada de papel reciclado poupa 20 árvores e 50% de energia.',
+      'tempo': '2 a 6 semanas',
+    },
+    'Pote de Vidro': {
+      'info': 'O vidro é reciclável infinitas vezes sem perder qualidade.',
+      'tempo': 'Mais de 1 milhão de anos',
+    },
+    'Colher de Metal': {
+      'info': 'Metais como alumínio e aço são completamente recicláveis e retornam ao ciclo industrial.',
+      'tempo': '100 a 500 anos',
+    },
   };
 
   late List<Map<String, dynamic>> _itensDaFase;
@@ -131,6 +200,39 @@ class _GameScreenState extends State<GameScreen> {
     _mestreReciclagemRegistrada = widget.mestreReciclagemJaDesbloqueada;
     _configurarFase();
     _inicioPergunta = DateTime.now();
+    _iniciarTimer();
+  }
+
+  void _iniciarTimer() {
+    _segundosRestantes = 12;
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        _segundosRestantes--;
+      });
+      if (_segundosRestantes <= 0) {
+        t.cancel();
+        _handleTimeOut();
+      }
+    });
+  }
+
+  void _reiniciarTimer() {
+    _timer.cancel();
+    _iniciarTimer();
+  }
+
+  void _handleTimeOut() {
+    if (_faseConcluida) return;
+    _dispararFeedback("erro", "");
+    setState(() {
+      _vidas--;
+      _sequenciaAcertos = 0;
+      _errouNaFase = true;
+    });
+    if (_vidas <= 0) {
+      _perderJogo();
+    }
   }
 
   void _configurarFase() {
@@ -156,10 +258,51 @@ class _GameScreenState extends State<GameScreen> {
         _tituloFase = "RECICLAGEM URBANA";
         _corFundo = const Color(0xFFF5F5F5);
         _itensDaFase = [
-          {'emoji': '💻', 'tipo': 'plastico', 'nome': 'Sucata Eletrônica'},
+          {'emoji': '💻', 'tipo': 'metal', 'nome': 'Sucata Eletrônica'},
           {'emoji': '🧴', 'tipo': 'plastico', 'nome': 'Frasco de Amaciante'},
           {'emoji': '🥂', 'tipo': 'vidro', 'nome': 'Taça Quebrada'},
           {'emoji': '📎', 'tipo': 'metal', 'nome': 'Clipes de Metal'},
+        ];
+        break;
+      case 4:
+        _tituloFase = "ESCOLA";
+        _corFundo = const Color(0xFFE3F2FD);
+        _itensDaFase = [
+          {'emoji': '✏️', 'tipo': 'papel', 'nome': 'Lápis Usado'},
+          {'emoji': '🧃', 'tipo': 'papel', 'nome': 'Caixinha de Suco'},
+          {'emoji': '🍶', 'tipo': 'plastico', 'nome': 'Garrafa Pet'},
+          {'emoji': '🖊️', 'tipo': 'plastico', 'nome': 'Caneta Velha'},
+        ];
+        break;
+      case 5:
+        _tituloFase = "RIO";
+        _corFundo = const Color(0xFFE0F7FA);
+        _itensDaFase = [
+          {'emoji': '🎣', 'tipo': 'plastico', 'nome': 'Linha de Pesca'},
+          {'emoji': '🥫', 'tipo': 'metal', 'nome': 'Lata no Rio'},
+          {'emoji': '🍾', 'tipo': 'vidro', 'nome': 'Garrafa no Rio'},
+          {'emoji': '📦', 'tipo': 'plastico', 'nome': 'Isopor'},
+        ];
+        break;
+      case 6:
+        _tituloFase = "USINA";
+        _corFundo = const Color(0xFFFFF9C4);
+        _itensDaFase = [
+          {'emoji': '🔌', 'tipo': 'metal', 'nome': 'Fio de Cobre'},
+          {'emoji': '🛢️', 'tipo': 'metal', 'nome': 'Tambor de Metal'},
+          {'emoji': '🧪', 'tipo': 'plastico', 'nome': 'Frasco Químico'},
+          {'emoji': '💡', 'tipo': 'vidro', 'nome': 'Lâmpada Usada'},
+          {'emoji': '📰', 'tipo': 'papel', 'nome': 'Papelão Industrial'},
+        ];
+        break;
+      case 7:
+        _tituloFase = "RESERVA";
+        _corFundo = const Color(0xFFE8F5E9);
+        _itensDaFase = [
+          {'emoji': '🌿', 'tipo': 'papel', 'nome': 'Folha de Papel'},
+          {'emoji': '🛍️', 'tipo': 'plastico', 'nome': 'Sacola Plástica'},
+          {'emoji': '🫙', 'tipo': 'vidro', 'nome': 'Pote de Vidro'},
+          {'emoji': '🥄', 'tipo': 'metal', 'nome': 'Colher de Metal'},
         ];
         break;
       default:
@@ -176,6 +319,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _tocarSom(String nomeArquivo) async {
+    if (_isMuted) return;
     if (kIsWeb && nomeArquivo == 'vitoria.mp3') return;
     try {
       await _audioPlayer.play(AssetSource('sounds/$nomeArquivo'));
@@ -187,13 +331,15 @@ class _GameScreenState extends State<GameScreen> {
       _feedbackTipo = tipo;
       _lixeiraAnimando = lixeira;
     });
-    _tocarSom(tipo == "acerto" ? 'acerto.mp3' : 'erro.mp3');
+    if (tipo == "acerto") _tocarSom('acerto.mp3');
+    if (tipo == "erro") _tocarSom('erro.mp3');
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) setState(() { _feedbackTipo = ""; _lixeiraAnimando = ""; });
     });
   }
 
   void _mostrarCuriosidade(String nomeItem, VoidCallback aoFechar) {
+    _timer.cancel();
     final dados = _dadosItens[nomeItem];
     showDialog(
       context: context,
@@ -244,6 +390,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _perderJogo() {
+    _timer.cancel();
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -299,6 +446,7 @@ class _GameScreenState extends State<GameScreen> {
         });
 
         Navigator.pop(context);
+        _reiniciarTimer();
 
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) setState(() => _mostrarMensagemSucesso = false);
@@ -311,6 +459,7 @@ class _GameScreenState extends State<GameScreen> {
 
   Future<void> _ganharFase() async {
     if (_faseConcluida) return;
+    _timer.cancel();
     setState(() => _faseConcluida = true);
     _tocarSom('vitoria.mp3');
 
@@ -434,7 +583,6 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // Evita leitura do Firestore em toda resposta: usa contador local + flag
   Future<void> _registrarMestreReciclagemSeNecessario() async {
     if (_mestreReciclagemRegistrada || _perguntasRespondidas < 20) return;
     _mestreReciclagemRegistrada = true;
@@ -474,6 +622,12 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Color get _timerColor {
+    if (_segundosRestantes > 6) return Colors.green;
+    if (_segundosRestantes > 3) return Colors.orange;
+    return Colors.red;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_itensDaFase.isEmpty) return const Scaffold();
@@ -495,7 +649,25 @@ class _GameScreenState extends State<GameScreen> {
                   itemAtual['nome'],
                   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87),
                 ),
-                const SizedBox(height: 60),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: _segundosRestantes / 12.0,
+                      minHeight: 8,
+                      backgroundColor: Colors.black12,
+                      valueColor: AlwaysStoppedAnimation<Color>(_timerColor),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$_segundosRestantes s',
+                  style: TextStyle(fontSize: 12, color: _timerColor, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 40),
                 Draggable<String>(
                   data: itemAtual['tipo'],
                   feedback: Material(
@@ -536,7 +708,7 @@ class _GameScreenState extends State<GameScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.85),
+                        color: Colors.black.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(15),
                         boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
                       ),
@@ -554,81 +726,103 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Future<void> _handleDrop(String binTipo) async {
+    if (_faseConcluida) return;
+    _timer.cancel();
+    final itemAtual = _itensDaFase[_itemAtualIndex];
+    final tipoCorreto = itemAtual['tipo'] as String;
+
+    if (tipoCorreto == binTipo) {
+      final respondeuRapido = DateTime.now().difference(_inicioPergunta).inSeconds < 5;
+      final isLastItem = _itemAtualIndex >= _itensDaFase.length - 1;
+      _dispararFeedback("acerto", binTipo);
+
+      _mostrarCuriosidade(itemAtual['nome'], () async {
+        setState(() {
+          _acertos++;
+          _sequenciaAcertos++;
+          if (respondeuRapido) _respostasRapidas++;
+          if (!isLastItem) {
+            _itemAtualIndex++;
+            _inicioPergunta = DateTime.now();
+            _reiniciarTimer();
+          }
+        });
+
+        _perguntasRespondidas++;
+
+        await FirebaseFirestore.instance.collection('jogadores').doc(widget.docId).update({
+          'sequencia_acertos': _sequenciaAcertos,
+          'perguntas_respondidas': FieldValue.increment(1),
+          'respostas_rapidas': _respostasRapidas,
+        });
+
+        await _registrarSequenciaVerdeSeNecessario();
+        await _registrarVelocidadeSolarSeNecessario();
+        await _registrarMestreReciclagemSeNecessario();
+
+        if (isLastItem) _ganharFase();
+      });
+    } else {
+      _dispararFeedback("erro", binTipo);
+      setState(() {
+        _vidas--;
+        _sequenciaAcertos = 0;
+        _errouNaFase = true;
+      });
+
+      if (_vidas <= 0) {
+        _perderJogo();
+      } else {
+        _reiniciarTimer();
+      }
+
+      _perguntasRespondidas++;
+
+      await FirebaseFirestore.instance.collection('jogadores').doc(widget.docId).update({
+        'sequencia_acertos': 0,
+        'perguntas_respondidas': FieldValue.increment(1),
+        'respostas_rapidas': _respostasRapidas,
+      });
+
+      await _registrarMestreReciclagemSeNecessario();
+    }
+  }
+
   Widget _buildBin(String tipo, Color cor, String label) {
     final bool estaAnimando = _lixeiraAnimando == tipo;
     final bool foiAcerto = _feedbackTipo == "acerto";
 
     return DragTarget<String>(
-      onAccept: (dado) async {
-        if (dado == tipo) {
-          final respondeuRapido = DateTime.now().difference(_inicioPergunta).inSeconds < 5;
-          final isLastItem = _itemAtualIndex >= _itensDaFase.length - 1;
-          _dispararFeedback("acerto", tipo);
-
-          _mostrarCuriosidade(_itensDaFase[_itemAtualIndex]['nome'], () async {
-            setState(() {
-              _acertos++;
-              _sequenciaAcertos++;
-              if (respondeuRapido) _respostasRapidas++;
-              if (!isLastItem) {
-                _itemAtualIndex++;
-                _inicioPergunta = DateTime.now();
-              }
-            });
-
-            _perguntasRespondidas++;
-
-            await FirebaseFirestore.instance.collection('jogadores').doc(widget.docId).update({
-              'sequencia_acertos': _sequenciaAcertos,
-              'perguntas_respondidas': FieldValue.increment(1),
-              'respostas_rapidas': _respostasRapidas,
-            });
-
-            await _registrarSequenciaVerdeSeNecessario();
-            await _registrarVelocidadeSolarSeNecessario();
-            await _registrarMestreReciclagemSeNecessario();
-
-            if (isLastItem) _ganharFase();
-          });
-        } else {
-          _dispararFeedback("erro", tipo);
-          setState(() {
-            _vidas--;
-            _sequenciaAcertos = 0;
-            _errouNaFase = true;
-            if (_vidas <= 0) _perderJogo();
-          });
-
-          _perguntasRespondidas++;
-
-          await FirebaseFirestore.instance.collection('jogadores').doc(widget.docId).update({
-            'sequencia_acertos': 0,
-            'perguntas_respondidas': FieldValue.increment(1),
-            'respostas_rapidas': _respostasRapidas,
-          });
-
-          await _registrarMestreReciclagemSeNecessario();
-        }
-      },
+      onAcceptWithDetails: (details) => _handleDrop(tipo),
       builder: (context, candidates, rejects) {
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: estaAnimando ? 85 : 75,
-          height: 105,
-          decoration: BoxDecoration(
-            color: estaAnimando ? (foiAcerto ? Colors.green : Colors.red) : cor,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                estaAnimando ? (foiAcerto ? Icons.check : Icons.close) : Icons.delete_outline,
-                color: Colors.white,
-                size: 30,
-              ),
-              Text(label, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-            ],
+        final bool highlighted = candidates.isNotEmpty;
+        return GestureDetector(
+          onTap: () => _handleDrop(tipo),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: (estaAnimando || highlighted) ? 85 : 75,
+            height: 105,
+            decoration: BoxDecoration(
+              color: estaAnimando
+                  ? (foiAcerto ? Colors.green : Colors.red)
+                  : highlighted
+                      ? cor.withValues(alpha: 0.7)
+                      : cor,
+              borderRadius: BorderRadius.circular(15),
+              border: highlighted ? Border.all(color: Colors.white, width: 2) : null,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  estaAnimando ? (foiAcerto ? Icons.check : Icons.close) : Icons.delete_outline,
+                  color: Colors.white,
+                  size: 30,
+                ),
+                Text(label, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
         );
       },
@@ -670,9 +864,19 @@ class _GameScreenState extends State<GameScreen> {
                 );
               }),
             ),
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    setState(() => _isMuted = !_isMuted);
+                  },
+                  icon: Icon(_isMuted ? Icons.volume_off : Icons.volume_up),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
             ),
           ],
         ),
@@ -682,6 +886,7 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    _timer.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }

@@ -37,9 +37,16 @@ class _LoadingScreenState extends State<LoadingScreen> {
       });
     }
 
-    // Pequena pausa no final para o usuário ver o 100%
-    await Future.delayed(Duration(milliseconds: 500));
-    _verificarUsuario();
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (!mounted) return;
+    await precacheImage(const AssetImage('assets/background_eco.jpg'), context);
+    if (!mounted) return;
+    await precacheImage(const AssetImage('assets/background_eco1.png'), context);
+    if (!mounted) return;
+    await precacheImage(const AssetImage('assets/registration.jpg'), context);
+
+    await _verificarUsuario();
   }
 
   Future<void> _verificarUsuario() async {
